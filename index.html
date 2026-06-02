@@ -1,0 +1,2291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>江南大学智能空调监控系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ant: {
+              primary: '#1677ff', 'primary-hover': '#4096ff', 'primary-active': '#0958d9',
+              success: '#52c41a', warning: '#faad14', error: '#ff4d4f',
+              bg: '#f0f2f5', border: '#f0f0f0', 'border-input': '#d9d9d9',
+              sider: '#001529', 'sider-sub': '#000c17', text: 'rgba(0,0,0,0.88)', 'text-secondary': 'rgba(0,0,0,0.45)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; color: rgba(0,0,0,0.88); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    .hidden-perm { display: none !important; }
+
+    /* Ant Design Layout */
+    .ant-layout-sider { background: #001529; width: 220px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .ant-logo { height: 64px; display: flex; align-items: center; padding: 0 20px; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .ant-logo-icon { width: 32px; height: 32px; background: #1677ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
+    .ant-logo-text { color: #fff; font-size: 15px; font-weight: 600; line-height: 1.3; white-space: nowrap; }
+    .ant-logo-sub { color: rgba(255,255,255,0.45); font-size: 11px; }
+    .ant-menu { padding: 8px 0; flex: 1; overflow-y: auto; }
+    .nav-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 0 20px; height: 40px; color: rgba(255,255,255,0.65); font-size: 14px; border: none; background: none; cursor: pointer; transition: all 0.2s; text-align: left; }
+    .nav-item:hover { color: #fff; background: transparent; }
+    .nav-item.active { color: #fff; background: #1677ff; border-radius: 0; }
+    .nav-item i { width: 16px; text-align: center; font-size: 14px; }
+    .nav-group-title { padding: 8px 20px 4px; font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 4px; }
+
+    .ant-layout-header { height: 48px; background: #fff; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,21,41,0.08); z-index: 10; }
+    .ant-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgba(0,0,0,0.45); }
+    .ant-breadcrumb span:last-child { color: rgba(0,0,0,0.88); }
+    .ant-header-right { display: flex; align-items: center; gap: 16px; }
+    .ant-header-action { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; cursor: pointer; color: rgba(0,0,0,0.65); transition: background 0.2s; border: none; background: none; font-size: 14px; }
+    .ant-header-action:hover { background: rgba(0,0,0,0.04); }
+    .ant-badge-dot { position: absolute; top: 2px; right: 2px; min-width: 18px; height: 18px; background: #ff4d4f; color: #fff; font-size: 11px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #fff; }
+    .ant-role-select { border: 1px solid #d9d9d9; border-radius: 6px; padding: 4px 8px; font-size: 13px; color: rgba(0,0,0,0.88); background: #fff; outline: none; cursor: pointer; }
+    .ant-role-select:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+
+    .ant-layout-content { flex: 1; overflow-y: auto; padding: 24px; background: #f0f2f5; }
+    .ant-page-header { margin-bottom: 20px; }
+    .ant-page-header h2 { font-size: 20px; font-weight: 600; color: rgba(0,0,0,0.88); margin: 0; line-height: 1.4; }
+    .ant-page-header p { font-size: 14px; color: rgba(0,0,0,0.45); margin: 4px 0 0; }
+
+    /* Card */
+    .ant-card { background: #fff; border-radius: 8px; border: 1px solid #f0f0f0; }
+    .ant-card-head { padding: 0 24px; min-height: 48px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+    .ant-card-head-title { font-size: 16px; font-weight: 600; color: rgba(0,0,0,0.88); }
+    .ant-card-body { padding: 24px; }
+    .ant-card-body-compact { padding: 0; }
+    .ant-card-body-compact .ant-table thead tr th:first-child,
+    .ant-card-body-compact .ant-table tbody tr td:first-child { padding-left: 24px; }
+    .ant-card-body-compact .ant-table thead tr th:last-child,
+    .ant-card-body-compact .ant-table tbody tr td:last-child { padding-right: 24px; }
+
+    @media (max-width: 1200px) {
+      .ant-statistic-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .ant-statistic-row { grid-template-columns: 1fr; }
+      .ant-layout-sider { width: 180px; }
+    }
+
+    /* Statistic */
+    .ant-statistic-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+    .ant-statistic { background: #fff; border-radius: 8px; padding: 20px 24px; border: 1px solid #f0f0f0; display: flex; align-items: flex-start; justify-content: space-between; transition: box-shadow 0.2s; }
+    .ant-statistic:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .ant-statistic-title { font-size: 14px; color: rgba(0,0,0,0.45); margin-bottom: 8px; }
+    .ant-statistic-value { font-size: 30px; font-weight: 600; line-height: 1.2; font-family: -apple-system, sans-serif; }
+    .ant-statistic-icon { width: 48px; height: 48px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+
+    /* Table */
+    .ant-table-wrapper { overflow-x: auto; }
+    .ant-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .ant-table thead tr th { background: #fafafa; padding: 12px 16px; text-align: left; font-weight: 600; color: rgba(0,0,0,0.88); border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+    .ant-table tbody tr td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; color: rgba(0,0,0,0.88); }
+    .ant-table tbody tr:hover td { background: #fafafa; }
+    .ant-table tbody tr.row-unread td { background: #fff2f0; }
+    .ant-table tbody tr.row-unread:hover td { background: #ffece8; }
+
+    /* Button */
+    .ant-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 4px 15px; font-size: 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; white-space: nowrap; line-height: 1; }
+    .ant-btn-primary { background: #1677ff; border-color: #1677ff; color: #fff; }
+    .ant-btn-primary:hover { background: #4096ff; border-color: #4096ff; }
+    .ant-btn-default { background: #fff; border-color: #d9d9d9; color: rgba(0,0,0,0.88); }
+    .ant-btn-default:hover { color: #1677ff; border-color: #1677ff; }
+    .ant-btn-danger { background: #fff; border-color: #ff4d4f; color: #ff4d4f; }
+    .ant-btn-danger:hover { background: #ff4d4f; color: #fff; }
+    .ant-btn-success { background: #52c41a; border-color: #52c41a; color: #fff; }
+    .ant-btn-success:hover { background: #73d13d; border-color: #73d13d; }
+    .ant-btn-sm { height: 24px; padding: 0 8px; font-size: 12px; }
+    .ant-btn-link { background: none; border: none; color: #1677ff; padding: 0 4px; height: auto; }
+    .ant-btn-link:hover { color: #4096ff; }
+    .ant-btn-link-danger { color: #ff4d4f; }
+    .ant-btn-link-danger:hover { color: #ff7875; }
+    .ant-btn-link-warning { color: #faad14; }
+    .ant-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Tag & Badge */
+    .ant-tag { display: inline-flex; align-items: center; padding: 0 7px; height: 22px; font-size: 12px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
+    .ant-tag-blue { background: #e6f4ff; border-color: #91caff; color: #1677ff; }
+    .ant-tag-green { background: #f6ffed; border-color: #b7eb8f; color: #52c41a; }
+    .ant-tag-red { background: #fff2f0; border-color: #ffccc7; color: #ff4d4f; }
+    .ant-tag-orange { background: #fff7e6; border-color: #ffd591; color: #fa8c16; }
+    .ant-tag-default { background: #fafafa; border-color: #d9d9d9; color: rgba(0,0,0,0.65); }
+    .ant-tag-purple { background: #f9f0ff; border-color: #d3adf7; color: #722ed1; }
+    .ant-badge-status { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+    .ant-badge-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-success { background: #52c41a; }
+    .dot-error { background: #ff4d4f; }
+    .dot-default { background: #d9d9d9; }
+    .dot-warning { background: #faad14; }
+    .dot-processing { background: #1677ff; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* Form */
+    .ant-form-item { margin-bottom: 16px; }
+    .ant-form-label { display: block; font-size: 14px; color: rgba(0,0,0,0.88); margin-bottom: 6px; }
+    .ant-input, .ant-select { width: 100%; height: 32px; padding: 4px 11px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; color: rgba(0,0,0,0.88); background: #fff; outline: none; transition: all 0.2s; }
+    .ant-input:hover, .ant-select:hover { border-color: #4096ff; }
+    .ant-input:focus, .ant-select:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+    .ant-filter-bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+    .ant-filter-item label { display: block; font-size: 12px; color: rgba(0,0,0,0.45); margin-bottom: 4px; }
+
+    /* Segmented */
+    .ant-segmented { display: inline-flex; background: #f5f5f5; border-radius: 6px; padding: 2px; }
+    .ant-segmented-item { padding: 4px 12px; border-radius: 4px; font-size: 14px; cursor: pointer; border: none; background: none; color: rgba(0,0,0,0.65); transition: all 0.2s; }
+    .ant-segmented-item.active { background: #fff; color: rgba(0,0,0,0.88); box-shadow: 0 1px 2px rgba(0,0,0,0.06); font-weight: 500; }
+
+    /* Tree */
+    .ant-tree-node { padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
+    .ant-tree-node:hover { background: #f5f5f5; }
+    .ant-tree-node-title { font-weight: 500; flex: 1; }
+    .ant-tree-children { margin-left: 24px; border-left: 1px dashed #d9d9d9; padding-left: 12px; }
+    .ant-tree-leaf { padding: 10px 12px; border: 1px solid #f0f0f0; border-radius: 6px; margin-bottom: 6px; background: #fafafa; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 13px; transition: all 0.2s; }
+    .ant-tree-leaf:hover { border-color: #91caff; background: #e6f4ff; }
+
+    /* Device Card */
+    .ant-device-card { background: #fff; border: 1px solid #f0f0f0; border-radius: 8px; overflow: hidden; transition: box-shadow 0.2s; }
+    .ant-device-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .ant-device-card-head { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+    .ant-device-card-body { padding: 16px 20px; }
+    .ant-device-card.running { border-top: 3px solid #52c41a; }
+    .ant-device-card.stopped { border-top: 3px solid #d9d9d9; }
+    .ant-temp-display { font-size: 28px; font-weight: 600; color: #1677ff; text-align: center; padding: 8px 0; }
+    .ant-temp-ctrl { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .ant-temp-btn { width: 28px; height: 28px; border: 1px solid #d9d9d9; border-radius: 6px; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .ant-temp-btn:hover { color: #1677ff; border-color: #1677ff; }
+
+    /* Alert */
+    .ant-alert { padding: 12px 16px; border-radius: 8px; border: 1px solid; display: flex; gap: 10px; font-size: 14px; }
+    .ant-alert-info { background: #e6f4ff; border-color: #91caff; color: rgba(0,0,0,0.88); }
+    .ant-alert-warning { background: #fffbe6; border-color: #ffe58f; color: rgba(0,0,0,0.88); }
+
+    /* Modal */
+    .ant-modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+    .ant-modal-mask.hidden { display: none !important; }
+    .ant-modal-mask:not(.hidden) { display: flex; }
+    .ant-modal { background: #fff; border-radius: 8px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 6px 16px rgba(0,0,0,0.08), 0 3px 6px rgba(0,0,0,0.12); }
+    .ant-modal-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; font-size: 16px; font-weight: 600; }
+    .ant-modal-body { padding: 24px; }
+    .ant-modal-footer { padding: 12px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; }
+
+    /* Notification */
+    .ant-notification { background: #fff; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.08), 0 3px 6px rgba(0,0,0,0.12); padding: 16px 20px; border-left: 4px solid; animation: notifIn 0.3s ease; }
+    @keyframes notifIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .notif-high { border-left-color: #ff4d4f; }
+    .notif-medium { border-left-color: #faad14; }
+    .notif-low { border-left-color: #1677ff; }
+
+    /* Toolbar */
+    .ant-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+
+    /* Divider in sider footer */
+    .ant-sider-footer { padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.35); font-size: 12px; }
+
+    /* Login Page */
+    .login-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #001529 0%, #003a8c 50%, #1677ff 100%); padding: 24px; position: relative; overflow: hidden; }
+    .login-page::before { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+    .login-container { position: relative; z-index: 1; width: 100%; max-width: 420px; }
+    .login-brand { text-align: center; margin-bottom: 28px; color: #fff; }
+    .login-brand-icon { width: 56px; height: 56px; background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.2); }
+    .login-brand h1 { font-size: 24px; font-weight: 600; margin: 0 0 6px; letter-spacing: 0.5px; }
+    .login-brand p { font-size: 14px; opacity: 0.65; margin: 0; }
+    .login-card { background: #fff; border-radius: 12px; padding: 32px 32px 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    .login-card-title { font-size: 18px; font-weight: 600; margin: 0 0 24px; color: rgba(0,0,0,0.88); text-align: center; }
+    .login-input-wrap { position: relative; margin-bottom: 16px; }
+    .login-input-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: rgba(0,0,0,0.25); font-size: 14px; }
+    .login-input { width: 100%; height: 40px; padding: 4px 11px 4px 36px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; outline: none; transition: all 0.2s; }
+    .login-input:hover { border-color: #4096ff; }
+    .login-input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+    .login-error { color: #ff4d4f; font-size: 13px; margin: -8px 0 12px; min-height: 20px; display: flex; align-items: center; gap: 6px; }
+    .login-btn { width: 100%; height: 40px; background: #1677ff; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+    .login-btn:hover { background: #4096ff; }
+    .login-demo-box { margin-top: 20px; background: rgba(255,255,255,0.95); border-radius: 10px; padding: 16px 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.3); }
+    .login-demo-title { font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.65); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .login-demo-title i { color: #faad14; }
+    .login-demo-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .login-demo-table th { text-align: left; padding: 6px 8px; color: rgba(0,0,0,0.45); font-weight: 500; border-bottom: 1px solid #f0f0f0; }
+    .login-demo-table td { padding: 8px; border-bottom: 1px solid #f0f0f0; color: rgba(0,0,0,0.88); }
+    .login-demo-table tr:last-child td { border-bottom: none; }
+    .login-demo-table code { background: #f5f5f5; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', Monaco, monospace; font-size: 12px; color: #1677ff; cursor: pointer; transition: background 0.2s; }
+    .login-demo-table code:hover { background: #e6f4ff; }
+    .login-demo-hint { font-size: 12px; color: rgba(0,0,0,0.35); margin-top: 10px; text-align: center; }
+    .app-hidden { display: none !important; }
+
+    /* Dashboard */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .dashboard-widget-full { grid-column: 1 / -1; }
+    .dashboard-chart { height: 300px; }
+    .dashboard-kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    @media (max-width: 1200px) { .dashboard-kpi-grid { grid-template-columns: repeat(3, 1fr); } .dashboard-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .dashboard-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    .dash-widget-check { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+    .dash-widget-check:last-child { border-bottom: none; }
+  </style>
+</head>
+<body class="h-screen overflow-hidden">
+  <!-- Login Page -->
+  <div id="loginPage" class="login-page">
+    <div class="login-container">
+      <div class="login-brand">
+        <div class="login-brand-icon"><i class="fas fa-wind"></i></div>
+        <h1>江南大学智能空调监控系统</h1>
+        <p>Jiangnan University Smart AC Monitoring</p>
+      </div>
+      <div class="login-card">
+        <h2 class="login-card-title">用户登录</h2>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="login-input-wrap">
+            <i class="fas fa-user"></i>
+            <input id="loginUsername" class="login-input" type="text" placeholder="请输入用户名" autocomplete="username">
+          </div>
+          <div class="login-input-wrap">
+            <i class="fas fa-lock"></i>
+            <input id="loginPassword" class="login-input" type="password" placeholder="请输入密码" autocomplete="current-password">
+          </div>
+          <div id="loginError" class="login-error"></div>
+          <button type="submit" class="login-btn"><i class="fas fa-right-to-bracket" style="margin-right:6px"></i>登 录</button>
+        </form>
+      </div>
+      <div class="login-demo-box">
+        <div class="login-demo-title"><i class="fas fa-circle-info"></i> 演示账号（点击账号可快速填入）</div>
+        <table class="login-demo-table">
+          <thead><tr><th>角色</th><th>用户名</th><th>密码</th></tr></thead>
+          <tbody id="demoAccountList"></tbody>
+        </table>
+    
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="appRoot" class="app-hidden">
+  <div id="toastContainer" class="fixed top-14 right-6 z-[1100] space-y-3 w-84" style="width:336px"></div>
+
+  <div class="flex h-screen">
+    <!-- Sider -->
+    <aside class="ant-layout-sider">
+      <div class="ant-logo">
+        <div class="ant-logo-icon"><i class="fas fa-wind"></i></div>
+        <div>
+          <div class="ant-logo-text">智能空调监控</div>
+          <div class="ant-logo-sub">江南大学</div>
+        </div>
+      </div>
+      <nav id="sidebarNav" class="ant-menu"></nav>
+      <div class="ant-sider-footer">v1.0.0 · 后勤管理处</div>
+    </aside>
+
+    <!-- Main -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <header class="ant-layout-header">
+        <div class="ant-breadcrumb">
+          <span><i class="fas fa-home" style="margin-right:4px"></i>首页</span>
+          <span>/</span>
+          <span id="breadcrumbPage">数据看板</span>
+        </div>
+        <div class="ant-header-right">
+          <div style="display:flex;align-items:center;gap:6px">
+            <i class="fas fa-user-shield" style="color:rgba(0,0,0,0.45);font-size:13px"></i>
+            <select id="roleSelect" class="ant-role-select">
+              <option value="admin">管理人员</option>
+              <option value="operator">操作人员</option>
+              <option value="viewer">浏览人员</option>
+            </select>
+          </div>
+          <button id="btnSimAlert" class="ant-header-action perm-control perm-admin perm-operator" style="background:#fff7e6;color:#fa8c16;border:1px solid #ffd591;border-radius:6px;padding:4px 12px">
+            <i class="fas fa-bell"></i> 模拟推送
+          </button>
+          <button id="btnNotif" class="ant-header-action" style="position:relative;padding:6px 10px">
+            <i class="fas fa-bell" style="font-size:16px"></i>
+            <span id="notifBadge" class="ant-badge-dot hidden">0</span>
+          </button>
+          <span id="currentTime" style="font-size:13px;color:rgba(0,0,0,0.45)"></span>
+          <div style="display:flex;align-items:center;gap:8px;padding-left:8px;border-left:1px solid #f0f0f0">
+            <div id="headerAvatar" style="width:28px;height:28px;background:#1677ff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600">管</div>
+            <span style="font-size:13px;color:rgba(0,0,0,0.65)" id="headerRoleName">管理人员</span>
+            <button id="btnLogout" class="ant-btn ant-btn-default ant-btn-sm" style="margin-left:4px" title="退出登录"><i class="fas fa-right-from-bracket"></i></button>
+          </div>
+        </div>
+      </header>
+      <main id="mainContent" class="ant-layout-content"></main>
+    </div>
+  </div>
+
+  <div id="modalOverlay" class="ant-modal-mask hidden">
+    <div id="modalBox" class="ant-modal"></div>
+  </div>
+  </div><!-- /appRoot -->
+
+<script>
+// ========== DATA STORE ==========
+const BUILDINGS = ['协同创新大楼', '未来食品大楼', '先研院大楼'];
+const AC_TYPES = { vrf: '多联机空调', split: '分体空调' };
+const MODES = { cool:'制冷', heat:'制热', fan:'送风', dry:'除湿' };
+const MODES_REV = { '制冷':'cool', '制热':'heat', '送风':'fan', '除湿':'dry' };
+const FANS = { low:'低', mid:'中', high:'高', auto:'自动' };
+const FANS_REV = { '低':'low', '中':'mid', '高':'high', '自动':'auto' };
+const ROLES = { admin:'管理人员', operator:'操作人员', viewer:'浏览人员' };
+
+const ALERT_TYPES = {
+  fault: { label: '空调故障', level: 'high', tag: 'red' },
+  offline: { label: '空调离线', level: 'medium', tag: 'orange' },
+  temp: { label: '空调温度超限', level: 'medium', tag: 'blue' },
+  offhours: { label: '空调非工作时间开机', level: 'low', tag: 'purple' },
+  indoor_offline: { label: '空调内机离线', level: 'high', tag: 'orange' },
+  runtime: { label: '运行时长异常', level: 'medium', tag: 'default' }
+};
+const ALERT_TYPE_KEYS = Object.keys(ALERT_TYPES);
+
+const DEMO_ACCOUNTS = [
+  { username:'admin', password:'admin123', role:'admin', label:'管理人员' },
+  { username:'operator', password:'op123456', role:'operator', label:'操作人员' },
+  { username:'viewer', password:'view1234', role:'viewer', label:'浏览人员' }
+];
+
+let loggedInUser = null;
+
+const PERMS = {
+  admin: { view:true, control:true, manage:true, settings:true, users:true, billingSettings:true },
+  operator: { view:true, control:true, manage:false, settings:false, users:false, billingSettings:true },
+  viewer: { view:true, control:false, manage:false, settings:false, users:false, billingSettings:false }
+};
+
+let currentRole = 'admin';
+let currentPage = 'dashboard';
+let monitorView = 'list';
+let statDateStart = '';
+let statDateEnd = '';
+let billDateStart = '';
+let billDateEnd = '';
+let alertFilterType = '';
+let alertFilterStatus = '';
+const BILL_UNIT_PRICE = 0.85;
+
+const DEFAULT_DASHBOARD = [
+  { id:'kpi', title:'关键指标概览', type:'kpi', enabled:true },
+  { id:'buildingRun', title:'楼栋设备运行对比', type:'bar', enabled:true, chartType:'bar' },
+  { id:'energyLine', title:'能耗趋势分析', type:'line', enabled:true },
+  { id:'alertStack', title:'告警类型统计', type:'stacked', enabled:true },
+  { id:'healthRadar', title:'系统健康度评估', type:'radar', enabled:true },
+  { id:'tempHeat', title:'楼层温度热力分布', type:'heatmap', enabled:true },
+  { id:'hourlyLine', title:'24小时运行曲线', type:'line', enabled:true },
+  { id:'modeStack', title:'运行模式占比', type:'stacked', enabled:true }
+];
+
+function loadDashboardConfig() {
+  try {
+    const s = localStorage.getItem('ac_dashboard');
+    if (s) {
+      const saved = JSON.parse(s);
+      return DEFAULT_DASHBOARD.map(d => ({ ...d, ...saved.find(x => x.id === d.id) }));
+    }
+  } catch {}
+  return DEFAULT_DASHBOARD.map(d => ({ ...d }));
+}
+let dashboardConfig = loadDashboardConfig();
+let dashboardCharts = [];
+
+// Generate AC devices
+function genDevices() {
+  const configs = [
+    { b:'协同创新大楼', units:[
+      {f:'1F',r:'101',brand:'大金',model:'FXDQ32'},{f:'2F',r:'201',brand:'格力',model:'GMV-H180WL/A'},
+      {f:'3F',r:'301',brand:'美的',model:'MDV-850'},{f:'4F',r:'401',brand:'海尔',model:'RFC50MXA'},
+      {f:'5F',r:'501',brand:'大金',model:'FXDQ50'}
+    ]},
+    { b:'未来食品大楼', units:[
+      {f:'1F',r:'A101',brand:'格力',model:'GMV-NH63'},{f:'2F',r:'A201',brand:'美的',model:'MDV-560'},
+      {f:'3F',r:'A301',brand:'海尔',model:'RFC80MXA'},{f:'4F',r:'A401',brand:'大金',model:'FXDQ63'}
+    ]},
+    { b:'先研院大楼', units:[
+      {f:'1F',r:'B101',brand:'美的',model:'MDV-450'},{f:'2F',r:'B201',brand:'格力',model:'GMV-H120'},
+      {f:'3F',r:'B301',brand:'海尔',model:'RFC40MXA'}
+    ]}
+  ];
+  let id = 1; const devices = [];
+  configs.forEach(c => c.units.forEach(u => {
+    const on = Math.random() > .3;
+    devices.push({
+      id: id++, name: `${c.b}-${u.f}-${u.r}`, building: c.b, floor: u.f, room: u.r,
+      brand: u.brand, model: u.model,
+      acType: (c.b === '先研院大楼' && Math.random() > 0.35) ? 'split' : 'vrf',
+      tags: [Math.random() > 0.75 ? '重点机房' : '实验室'],
+      power: on, mode: ['cool','heat','fan','dry'][Math.floor(Math.random()*4)],
+      fanSpeed: ['low','mid','high','auto'][Math.floor(Math.random()*4)],
+      temp: 22 + Math.floor(Math.random()*6), online: Math.random() > .08,
+      settings: {
+        lockPower:false, lockMode:false, coolMin:16, heatMax:30,
+        allowRemote:true, allowBind:true, alertOffHours:true,
+        offHoursStart:'22:00', offHoursEnd:'06:00'
+      }
+    });
+  }));
+  return devices;
+}
+
+const store = {
+  devices: genDevices(),
+  strategies: [
+    { id:1, name:'工作日开机', deviceIds:[1,2,3], time:'08:00', days:[1,2,3,4,5], action:'power', value:'on', enabled:true },
+    { id:2, name:'晚间关机', deviceIds:[1,2,3,4,5], time:'18:00', days:[1,2,3,4,5], action:'power', value:'off', enabled:true },
+    { id:3, name:'周末节能', deviceIds:[6,7,8], time:'09:00', days:[6,0], action:'temp', value:'26', enabled:false }
+  ],
+  alerts: [],
+  logs: [],
+  users: [
+    { id:1, name:'张管理', username:'admin_zhang', role:'admin', phone:'13800001001', dept:'后勤管理处' },
+    { id:2, name:'李操作', username:'op_li', role:'operator', phone:'13800001002', dept:'设备运维组' },
+    { id:3, name:'王浏览', username:'view_wang', role:'viewer', phone:'13800001003', dept:'信息中心' },
+    { id:4, name:'赵操作', username:'op_zhao', role:'operator', phone:'13800001004', dept:'设备运维组' }
+  ],
+  terminalUsers: [
+    { id:1, name:'陈教授', phone:'13900001001', dept:'食品学院', deviceIds:[6,7,8] },
+    { id:2, name:'刘研究员', phone:'13900001002', dept:'先研院', deviceIds:[10,11,12] }
+  ],
+  nextIds: { strategy:4, alert:4, log:1, user:5, terminal:3 },
+  statCustomTags: ['实验室', '重点机房', '节能监控']
+};
+
+function initBillingData() {
+  store.billing = {
+    settings: {
+      basis: 'runtime', basisLabel: '运行时长',
+      defaultCoefficient: 1.0,
+      unitPrice: BILL_UNIT_PRICE,
+      ...getDefaultBillCycleDates(),
+      lastAllocateTime: fmtTime(-30)
+    },
+    outdoorMeters: BUILDINGS.map((b, i) => ({
+      id: i + 1, building: b, meterNo: `DM-${String(i + 1).padStart(3, '0')}`,
+      totalKwh: Math.floor(Math.random() * 5000 + 8000)
+    })),
+    deviceBilling: store.devices.map(d => ({
+      deviceId: d.id,
+      coefficient: +(0.85 + Math.random() * 0.3).toFixed(2),
+      participate: Math.random() > 0.05,
+      runtimeHours: Math.floor(Math.random() * 180 + 40),
+      allocatedKwh: 0
+    })),
+    history: []
+  };
+  recalculateBilling(false);
+}
+
+function recalculateBilling(log = true) {
+  const b = store.billing;
+  b.settings.lastAllocateTime = fmtTime();
+  BUILDINGS.forEach(building => {
+    const meter = b.outdoorMeters.find(m => m.building === building);
+    if (!meter) return;
+    const devs = store.devices.filter(d => d.building === building);
+    const items = devs.map(d => {
+      const bill = b.deviceBilling.find(x => x.deviceId === d.id);
+      return { bill, weight: bill && bill.participate ? bill.runtimeHours * bill.coefficient : 0 };
+    });
+    const totalWeight = items.reduce((s, x) => s + x.weight, 0);
+    items.forEach(({ bill, weight }) => {
+      if (bill) bill.allocatedKwh = totalWeight > 0 && bill.participate
+        ? +((weight / totalWeight) * meter.totalKwh).toFixed(2) : 0;
+    });
+  });
+  if (log) addLog(0, '系统', { channel: 'remote', action: '计费分摊', result: '分摊完成', detail: '共更新 ' + store.devices.length + ' 台内机' });
+  b.history.unshift({
+    time: fmtTime(), period: getBillCycleLabel(),
+    totalKwh: b.outdoorMeters.reduce((s, m) => s + m.totalKwh, 0),
+    deviceCount: b.deviceBilling.filter(x => x.participate).length,
+    operator: ROLES[currentRole]
+  });
+  if (b.history.length > 20) b.history.pop();
+}
+
+function hasBillingSettings() { return hasPerm('billingSettings'); }
+
+// Init logs
+function alertAt(offsetMin) {
+  return Date.now() + offsetMin * 60000;
+}
+
+function sortAlertsByTime(list) {
+  return list.slice().sort((a, b) => (b.at || 0) - (a.at || 0));
+}
+
+function genInitialAlerts() {
+  // 各类型数量：1、2、3、4、5、2（六类几乎互不相同）
+  const rows = [
+    { type: 'offhours', deviceId: 1, msg: '非工作时段(22:00-06:00)检测到异常开机', offsetMin: -18, read: false },
+    { type: 'indoor_offline', deviceId: 7, msg: '室内机通信中断，无法采集运行与计费数据', offsetMin: -42, read: false },
+    { type: 'fault', deviceId: 3, msg: '压缩机故障，请及时检修', offsetMin: -55, read: false },
+    { type: 'temp', deviceId: 10, msg: '制冷模式下室温持续高于 29℃', offsetMin: -75, read: false },
+    { type: 'runtime', deviceId: 5, msg: '运行时长异常偏高（当前520h，超出均值80%）', offsetMin: -105, read: false },
+    { type: 'offline', deviceId: 4, msg: '楼栋采集器掉线，该层设备状态不可见', offsetMin: -195, read: false },
+    { type: 'indoor_offline', deviceId: 11, msg: '内机面板离线，远程控制不可用', offsetMin: -310, read: false },
+    { type: 'offline', deviceId: 7, msg: '空调主机离线，通信中断超过30分钟', offsetMin: -680, read: false },
+    { type: 'offhours', deviceId: 8, msg: '周末非工作时间开机，已推送告警', offsetMin: -1280, read: false },
+    { type: 'temp', deviceId: 2, msg: '回风温度 31℃，超过设备告警阈值', offsetMin: -3180, read: true },
+    { type: 'indoor_offline', deviceId: 2, msg: '多联机从机 #2 无应答，仅主机在线', offsetMin: -2460, read: true },
+    { type: 'offhours', deviceId: 3, msg: '节假日凌晨 02:15 检测到持续运行', offsetMin: -3960, read: true },
+    { type: 'runtime', deviceId: 11, msg: '运行时长异常偏低（当前12h，低于均值70%）', offsetMin: -5040, read: true },
+    { type: 'indoor_offline', deviceId: 12, msg: '内机与室外机链路中断超过 1 小时', offsetMin: -5880, read: false },
+    { type: 'offhours', deviceId: 6, msg: '法定节假日白天长时间运行', offsetMin: -7320, read: true },
+    { type: 'temp', deviceId: 8, msg: '制热设定 30℃ 超过设备允许上限', offsetMin: -8640, read: true },
+    { type: 'indoor_offline', deviceId: 4, msg: '分体内机掉线，仅保留历史运行记录', offsetMin: -10200, read: true }
+  ];
+  const list = rows.map((s, i) => ({
+    id: i + 1,
+    type: s.type,
+    level: ALERT_TYPES[s.type].level,
+    deviceId: s.deviceId,
+    msg: s.msg,
+    at: alertAt(s.offsetMin),
+    time: fmtTime(s.offsetMin),
+    read: s.read
+  }));
+  return sortAlertsByTime(list).map((a, i) => ({ ...a, id: i + 1 }));
+}
+
+genInitialLogs();
+store.alerts = genInitialAlerts();
+store.nextIds.alert = store.alerts.length + 1;
+initBillingData();
+
+function fmtTime(offsetMin=0) {
+  const d = new Date(Date.now() + offsetMin * 60000);
+  return d.toLocaleString('zh-CN', { hour12:false });
+}
+
+function fmtLogTime(offsetSec=0) {
+  const d = new Date(Date.now() + offsetSec * 1000);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+const LOG_CHANNEL = { remote: '远程', offline: '线下' };
+
+function genInitialLogs() {
+  store.logs = [];
+  const remoteOps = ['张管理', '李操作', '赵操作'];
+  const offlineOps = ['/'];
+  store.devices.forEach((d, di) => {
+    let temp = d.temp;
+    let power = false;
+    const count = 5 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < count; i++) {
+      const offsetSec = -(di * 500 + i * 220 + Math.floor(Math.random() * 90));
+      const channel = Math.random() > 0.35 ? 'remote' : 'offline';
+      const operator = channel === 'remote'
+        ? remoteOps[Math.floor(Math.random() * remoteOps.length)]
+        : offlineOps[Math.floor(Math.random() * offlineOps.length)];
+      const kind = ['power', 'temp', 'mode', 'fan'][Math.floor(Math.random() * 4)];
+      let action, result, detail = '';
+      if (kind === 'power') {
+        power = !power;
+        action = '开关控制';
+        result = power ? '设备开机' : '设备关机';
+      } else if (kind === 'temp') {
+        const prev = temp;
+        const delta = Math.random() > 0.5 ? 1 : -1;
+        temp = Math.max(16, Math.min(30, temp + delta));
+        action = '温度设定';
+        result = `温度调至${temp}℃`;
+        detail = `由 ${prev}℃ 调整至 ${temp}℃`;
+      } else if (kind === 'mode') {
+        const modes = Object.keys(MODES);
+        const m = modes[Math.floor(Math.random() * modes.length)];
+        action = '模式切换';
+        result = `切换至${MODES[m]}模式`;
+      } else {
+        const fans = Object.keys(FANS);
+        const f = fans[Math.floor(Math.random() * fans.length)];
+        action = '风速调节';
+        result = `风速设为${FANS[f]}`;
+      }
+      store.logs.push({
+        id: store.nextIds.log++, time: fmtLogTime(offsetSec), deviceId: d.id, deviceName: d.name,
+        operator, channel, action, result, detail, status: Math.random() > 0.05 ? 'success' : 'fail'
+      });
+    }
+    store.logs.push({
+      id: store.nextIds.log++, time: fmtLogTime(-(di * 500 + count * 220 + 30)),
+      deviceId: d.id, deviceName: d.name, operator: '系统', channel: 'remote',
+      action: '状态同步', result: d.power ? '设备开机' : '设备关机', detail: '采集当前运行状态', status: 'success'
+    });
+  });
+  store.logs.sort((a, b) => b.time.localeCompare(a.time));
+}
+
+/**
+ * @param {number} deviceId
+ * @param {string} operator
+ * @param {string|object} channelOrOpts - 'remote'|'offline' 或 { channel, action, result, detail, status }
+ */
+function addLog(deviceId, operator, channelOrOpts, action, result, status = 'success', detail = '') {
+  let channel, act, res, det, st;
+  if (typeof channelOrOpts === 'object' && channelOrOpts !== null) {
+    ({ channel = 'remote', action: act = '', result: res = '', detail: det = '', status: st = 'success' } = channelOrOpts);
+  } else if (channelOrOpts === 'remote' || channelOrOpts === 'offline') {
+    channel = channelOrOpts;
+    act = action || '';
+    res = result || '';
+    det = detail || '';
+    st = status;
+  } else {
+    channel = 'remote';
+    act = channelOrOpts || '';
+    res = action || '执行成功';
+    det = detail || '';
+    st = (result === 'success' || result === 'fail') ? result : status;
+  }
+  const dev = deviceId ? store.devices.find(d => d.id === deviceId) : null;
+  store.logs.unshift({
+    id: store.nextIds.log++, time: fmtLogTime(), deviceId: deviceId || 0,
+    deviceName: dev?.name || '系统', operator, channel, action: act, result: res, detail: det, status: st
+  });
+  if (currentPage === 'logs') {
+    const body = document.getElementById('logBody');
+    if (body) body.innerHTML = renderLogRows(store.logs.slice(0, 200));
+  }
+}
+
+function addAlert(type, deviceId, msg) {
+  const at = Date.now();
+  const a = { id: store.nextIds.alert++, type, level: ALERT_TYPES[type]?.level || 'medium', deviceId, msg, at, time: fmtTime(), read: false };
+  store.alerts.unshift(a);
+  showToast(a);
+  updateNotifBadge();
+  if (currentPage === 'alerts') renderPage();
+}
+
+function showToast(alert) {
+  const dev = store.devices.find(d => d.id === alert.deviceId);
+  const cls = { high:'notif-high', medium:'notif-medium', low:'notif-low' };
+  const icons = { high:'fa-circle-xmark', medium:'fa-triangle-exclamation', low:'fa-circle-info' };
+  const iconColor = { high:'#ff4d4f', medium:'#faad14', low:'#1677ff' };
+  const el = document.createElement('div');
+  el.className = `ant-notification ${cls[alert.level]}`;
+  el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+    <div style="display:flex;gap:12px">
+      <i class="fas ${icons[alert.level]}" style="color:${iconColor[alert.level]};font-size:20px;margin-top:2px"></i>
+      <div><p style="font-weight:600;font-size:14px;margin:0">告警通知</p>
+      <p style="font-size:13px;color:rgba(0,0,0,0.65);margin:4px 0 0">${dev?.name||''} · ${alert.msg}</p>
+      <p style="font-size:12px;color:rgba(0,0,0,0.35);margin:4px 0 0">${alert.time}</p></div>
+    </div>
+    <button style="border:none;background:none;color:rgba(0,0,0,0.25);cursor:pointer;font-size:14px" onclick="this.closest('.ant-notification').remove()"><i class="fas fa-times"></i></button>
+  </div>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+function updateNotifBadge() {
+  const cnt = store.alerts.filter(a => !a.read).length;
+  const badge = document.getElementById('notifBadge');
+  badge.textContent = cnt;
+  badge.classList.toggle('hidden', cnt === 0);
+}
+
+function hasPerm(p) { return PERMS[currentRole][p]; }
+
+// ========== NAV ==========
+const NAV = [
+  { id:'dashboard', icon:'fa-chart-pie', label:'数据看板', perm:'view' },
+  { group:'监控中心' },
+  { id:'overview', icon:'fa-sitemap', label:'运行总览', perm:'view' },
+  { id:'monitor', icon:'fa-desktop', label:'实时监测', perm:'view' },
+  { id:'control', icon:'fa-sliders', label:'远程控制', perm:'view' },
+  { id:'alerts', icon:'fa-triangle-exclamation', label:'异常告警', perm:'view' },
+  { group:'运维管理' },
+  { id:'strategy', icon:'fa-clock', label:'自动策略', perm:'view' },
+  { id:'logs', icon:'fa-list-alt', label:'运行日志', perm:'view' },
+  { id:'stats', icon:'fa-chart-bar', label:'查询统计', perm:'view' },
+  { group:'用能计费' },
+  { id:'billAllocate', icon:'fa-calculator', label:'分户计费', perm:'view' },
+  { id:'billStats', icon:'fa-file-invoice', label:'计费统计', perm:'view' },
+  { id:'billSettings', icon:'fa-sliders-h', label:'计费参数', perm:'billingSettings' },
+  { id:'billUsers', icon:'fa-user-lock', label:'计费权限', perm:'users' },
+  { group:'系统配置' },
+  { id:'devices', icon:'fa-server', label:'设备管理', perm:'manage' },
+  { id:'settings', icon:'fa-gear', label:'运行设置', perm:'settings' },
+  { id:'users', icon:'fa-users', label:'用户管理', perm:'users' },
+  { id:'terminal', icon:'fa-mobile-screen', label:'终端用户', perm:'manage' }
+];
+
+const PAGE_TITLES = {};
+NAV.filter(n=>n.id).forEach(n => PAGE_TITLES[n.id] = n.label);
+
+function renderSidebar() {
+  let html = '';
+  NAV.forEach(n => {
+    if (n.group) {
+      if (n.group === '系统配置' && !hasPerm('manage') && !hasPerm('settings') && !hasPerm('users')) return;
+      if (n.group === '用能计费') { /* always show group */ }
+      html += `<div class="nav-group-title">${n.group}</div>`;
+      return;
+    }
+    if (n.perm === 'billingSettings' && !hasPerm('billingSettings')) return;
+    if (n.perm !== 'view' && n.perm !== 'billingSettings' && !hasPerm(n.perm)) return;
+    html += `<button onclick="switchPage('${n.id}')" class="nav-item ${currentPage===n.id?'active':''}">
+      <i class="fas ${n.icon}"></i><span>${n.label}</span>
+    </button>`;
+  });
+  document.getElementById('sidebarNav').innerHTML = html;
+}
+
+function applyPermissions() {
+  document.querySelectorAll('.perm-control').forEach(el => {
+    const roles = [...el.classList].filter(c => c.startsWith('perm-')).map(c => c.replace('perm-',''));
+    el.classList.toggle('hidden-perm', !roles.includes(currentRole));
+  });
+  document.querySelectorAll('[data-perm]').forEach(el => {
+    el.classList.toggle('hidden-perm', !hasPerm(el.dataset.perm));
+  });
+}
+
+function switchPage(id) {
+  currentPage = id;
+  document.getElementById('breadcrumbPage').textContent = PAGE_TITLES[id] || id;
+  renderSidebar();
+  renderPage();
+  setTimeout(applyPermissions, 0);
+}
+
+// ========== RENDER PAGES ==========
+function renderPage() {
+  const el = document.getElementById('mainContent');
+  const renderers = {
+    dashboard: renderDashboard, overview: renderOverview, monitor: renderMonitor, control: renderControl,
+    strategy: renderStrategy, alerts: renderAlerts, logs: renderLogs,
+    stats: renderStats, devices: renderDevices, settings: renderSettings,
+    users: renderUsers, terminal: renderTerminal,
+    billAllocate: renderBillAllocate, billStats: renderBillStats,
+    billSettings: renderBillSettings, billUsers: renderBillUsers
+  };
+  el.innerHTML = renderers[currentPage]?.() || '';
+  if (currentPage === 'stats') setTimeout(initCharts, 100);
+  if (currentPage === 'dashboard') setTimeout(initDashboardCharts, 100);
+  if (currentPage === 'billStats') setTimeout(searchBillStats, 80);
+  applyPermissions();
+}
+
+function pageHeader(title) {
+  return `<div class="ant-page-header"><h2>${title}</h2></div>`;
+}
+
+function antTag(text, type='blue') { return `<span class="ant-tag ant-tag-${type}">${text}</span>`; }
+function statusDot(text, type='default') { return `<span class="ant-badge-status"><span class="ant-badge-status-dot dot-${type}"></span>${text}</span>`; }
+function antCard(title, body, extra='', compact=false) {
+  return `<div class="ant-card"><div class="ant-card-head"><span class="ant-card-head-title">${title}</span>${extra}</div><div class="ant-card-body${compact?' ant-card-body-compact':''}">${body}</div></div>`;
+}
+function antTable(headers, rows) {
+  return `<div class="ant-table-wrapper"><table class="ant-table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function statCard(title, value, icon, color, valColor) {
+  const colors = { blue:'#e6f4ff', green:'#f6ffed', red:'#fff2f0', gray:'#fafafa' };
+  const iconColors = { blue:'#1677ff', green:'#52c41a', red:'#ff4d4f', gray:'rgba(0,0,0,0.25)' };
+  return `<div class="ant-statistic">
+    <div><div class="ant-statistic-title">${title}</div><div class="ant-statistic-value" style="color:${valColor||iconColors[color]}">${value}</div></div>
+    <div class="ant-statistic-icon" style="background:${colors[color]};color:${iconColors[color]}"><i class="fas ${icon}"></i></div>
+  </div>`;
+}
+function antSegmented(items, active, fn) {
+  return `<div class="ant-segmented">${items.map(i=>`<button class="ant-segmented-item ${active===i.v?'active':''}" onclick="${fn}('${i.v}')">${i.l}</button>`).join('')}</div>`;
+}
+
+// 0. Data Dashboard
+function getDashboardStats() {
+  const devs = store.devices;
+  const onCnt = devs.filter(d => d.power).length;
+  const offlineCnt = devs.filter(d => !d.online).length;
+  const alertCnt = store.alerts.filter(a => !a.read).length;
+  const avgTemp = devs.length ? (devs.reduce((s, d) => s + d.temp, 0) / devs.length).toFixed(1) : 0;
+  const onlineRate = devs.length ? ((devs.filter(d => d.online).length / devs.length) * 100).toFixed(0) : 0;
+  return { total: devs.length, onCnt, offCnt: devs.length - onCnt, offlineCnt, alertCnt, avgTemp, onlineRate };
+}
+
+function renderDashboardWidget(w) {
+  if (!w.enabled) return '';
+  const full = w.type === 'kpi' ? ' dashboard-widget-full' : '';
+  if (w.type === 'kpi') {
+    const s = getDashboardStats();
+    return `<div class="dashboard-widget-full">${antCard(w.title, `
+      <div class="dashboard-kpi-grid">
+        ${statCard('设备总数', s.total, 'fa-server', 'blue', '#1677ff')}
+        ${statCard('运行中', s.onCnt, 'fa-circle-play', 'green', '#52c41a')}
+        ${statCard('已关闭', s.offCnt, 'fa-circle-stop', 'gray', 'rgba(0,0,0,0.45)')}
+        ${statCard('离线设备', s.offlineCnt, 'fa-plug-circle-xmark', 'red', '#ff4d4f')}
+        ${statCard('未读告警', s.alertCnt, 'fa-bell', 'red', '#ff4d4f')}
+        ${statCard('平均温度', s.avgTemp + '℃', 'fa-temperature-half', 'blue', '#1677ff')}
+      </div>`, `<span style="font-size:13px;color:rgba(0,0,0,0.45)">在线率 ${s.onlineRate}%</span>`)}</div>`;
+  }
+  const typeLabel = { bar:'柱状图', line:'折线图', stacked:'堆积图', radar:'雷达图', heatmap:'热力图' };
+  const extra = w.chartType ? `<span class="ant-tag ant-tag-blue">${typeLabel[w.type]||w.type}</span>` : '';
+  return `<div class="${full.trim() || ''}">${antCard(w.title, `<div id="dashChart_${w.id}" class="dashboard-chart"></div>`, extra)}</div>`;
+}
+
+function renderDashboard() {
+  const enabledCnt = dashboardConfig.filter(w => w.enabled).length;
+  const widgets = dashboardConfig.map(renderDashboardWidget).join('');
+  return pageHeader('数据看板', '集中展示系统关键数据及运行情况，支持定制图表组件') + `
+    <div class="ant-toolbar">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="openDashboardCustomize()" class="ant-btn ant-btn-primary">
+          <i class="fas fa-sliders"></i> 定制看板
+        </button>
+        <button onclick="resetDashboard()" class="ant-btn ant-btn-default">
+          <i class="fas fa-rotate-left"></i> 恢复默认
+        </button>
+        <button onclick="initDashboardCharts()" class="ant-btn ant-btn-default">
+          <i class="fas fa-sync"></i> 刷新数据
+        </button>
+      </div>
+      <span style="font-size:13px;color:rgba(0,0,0,0.45)">已启用 ${enabledCnt} / ${dashboardConfig.length} 个组件</span>
+    </div>
+    <div class="dashboard-grid">${widgets || '<div class="dashboard-widget-full"><div class="ant-alert ant-alert-warning"><i class="fas fa-info-circle" style="color:#faad14"></i>暂无看板组件，请点击「定制看板」添加</div></div>'}</div>`;
+}
+
+function openDashboardCustomize() {
+  const items = dashboardConfig.map(w => {
+    const typeOpts = w.id === 'buildingRun' ? `
+      <select class="ant-select" style="width:100px;height:28px" onchange="setWidgetChartType('${w.id}',this.value)">
+        <option value="bar" ${w.chartType==='bar'?'selected':''}>柱状图</option>
+        <option value="stacked" ${w.chartType==='stacked'?'selected':''}>堆积图</option>
+      </select>` : '';
+    return `<div class="dash-widget-check">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+        <input type="checkbox" ${w.enabled?'checked':''} onchange="toggleDashboardWidget('${w.id}',this.checked)" style="width:16px;height:16px;accent-color:#1677ff">
+        ${w.title}
+      </label>
+      ${typeOpts}
+    </div>`;
+  }).join('');
+  showModal(`<div class="ant-modal-header"><i class="fas fa-sliders" style="margin-right:8px;color:#1677ff"></i>定制数据看板</div>
+    <div class="ant-modal-body">
+      <div class="ant-alert ant-alert-info" style="margin-bottom:16px">
+        <i class="fas fa-info-circle" style="color:#1677ff"></i>
+        <span>勾选需要展示的组件，支持柱状图、折线图、堆积图、雷达图、热力图等多种形式</span>
+      </div>
+      ${items}
+    </div>
+    <div class="ant-modal-footer">
+      <button onclick="closeModal()" class="ant-btn ant-btn-default">取消</button>
+      <button onclick="applyDashboardCustomize()" class="ant-btn ant-btn-primary">应用并刷新</button>
+    </div>`);
+}
+
+function toggleDashboardWidget(id, enabled) {
+  const w = dashboardConfig.find(x => x.id === id);
+  if (w) w.enabled = enabled;
+  localStorage.setItem('ac_dashboard', JSON.stringify(dashboardConfig));
+}
+
+function applyDashboardCustomize() {
+  localStorage.setItem('ac_dashboard', JSON.stringify(dashboardConfig));
+  closeModal();
+  renderPage();
+}
+
+function setWidgetChartType(id, chartType) {
+  const w = dashboardConfig.find(x => x.id === id);
+  if (w) { w.chartType = chartType; w.type = chartType === 'stacked' ? 'stacked' : 'bar'; }
+  localStorage.setItem('ac_dashboard', JSON.stringify(dashboardConfig));
+}
+
+function resetDashboard() {
+  if (!confirm('确认恢复默认看板配置？')) return;
+  dashboardConfig = DEFAULT_DASHBOARD.map(d => ({ ...d }));
+  localStorage.removeItem('ac_dashboard');
+  renderPage();
+}
+
+function initDashboardCharts() {
+  dashboardCharts.forEach(c => c.dispose());
+  dashboardCharts = [];
+  const titleStyle = { fontSize: 14, fontWeight: 600, color: 'rgba(0,0,0,0.88)' };
+  const grid = { left: 50, right: 20, top: 40, bottom: 30 };
+  const devs = store.devices;
+  const hours = Array.from({ length: 24 }, (_, i) => i + ':00');
+  const weekDays = ['周一','周二','周三','周四','周五','周六','周日'];
+
+  dashboardConfig.filter(w => w.enabled && w.type !== 'kpi').forEach(w => {
+    const el = document.getElementById('dashChart_' + w.id);
+    if (!el) return;
+    const chart = echarts.init(el);
+    dashboardCharts.push(chart);
+
+    if (w.id === 'buildingRun') {
+      const running = BUILDINGS.map(b => devs.filter(d => d.building === b && d.power).length);
+      const stopped = BUILDINGS.map(b => devs.filter(d => d.building === b && !d.power).length);
+      const offline = BUILDINGS.map(b => devs.filter(d => d.building === b && !d.online).length);
+      if (w.chartType === 'stacked') {
+        chart.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          legend: { data: ['运行中', '已关闭', '离线'], bottom: 0, textStyle: { fontSize: 12 } },
+          grid: { ...grid, bottom: 40 },
+          xAxis: { type: 'category', data: BUILDINGS.map(b => b.replace('大楼', '')), axisLine: { lineStyle: { color: '#f0f0f0' } } },
+          yAxis: { type: 'value', name: '台', splitLine: { lineStyle: { color: '#f0f0f0' } } },
+          series: [
+            { name: '运行中', type: 'bar', stack: 'total', data: running, itemStyle: { color: '#52c41a' } },
+            { name: '已关闭', type: 'bar', stack: 'total', data: stopped, itemStyle: { color: '#d9d9d9' } },
+            { name: '离线', type: 'bar', stack: 'total', data: offline, itemStyle: { color: '#ff4d4f' } }
+          ]
+        });
+      } else {
+        chart.setOption({
+          tooltip: { trigger: 'axis' }, grid,
+          xAxis: { type: 'category', data: BUILDINGS.map(b => b.replace('大楼', '')), axisLine: { lineStyle: { color: '#f0f0f0' } } },
+          yAxis: { type: 'value', name: '台', splitLine: { lineStyle: { color: '#f0f0f0' } } },
+          series: [{ type: 'bar', data: running, itemStyle: { color: '#1677ff', borderRadius: [4, 4, 0, 0] }, barWidth: '40%',
+            label: { show: true, position: 'top', fontSize: 11 } }]
+        });
+      }
+    }
+
+    if (w.id === 'energyLine') {
+      chart.setOption({
+        tooltip: { trigger: 'axis' }, legend: { data: BUILDINGS, bottom: 0, textStyle: { fontSize: 11 } },
+        grid: { ...grid, bottom: 40 },
+        xAxis: { type: 'category', data: weekDays, boundaryGap: false, axisLine: { lineStyle: { color: '#f0f0f0' } } },
+        yAxis: { type: 'value', name: 'kWh', splitLine: { lineStyle: { color: '#f0f0f0' } } },
+        series: BUILDINGS.map((b, i) => ({
+          name: b.replace('大楼', ''), type: 'line', smooth: true, symbol: 'circle', symbolSize: 6,
+          data: weekDays.map(() => Math.floor(Math.random() * 180 + 80)),
+          lineStyle: { width: 2 }, itemStyle: { color: ['#1677ff', '#52c41a', '#faad14'][i] }
+        }))
+      });
+    }
+
+    if (w.id === 'alertStack') {
+      const types = ALERT_TYPE_KEYS;
+      const stackColors = ['#ff4d4f', '#fa8c16', '#1677ff', '#722ed1', '#eb2f96', '#8c8c8c'];
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: types.map(t => ALERT_TYPES[t].label), bottom: 0, textStyle: { fontSize: 10 } },
+        grid: { ...grid, bottom: 56 },
+        xAxis: { type: 'category', data: weekDays, axisLine: { lineStyle: { color: '#f0f0f0' } } },
+        yAxis: { type: 'value', name: '次', splitLine: { lineStyle: { color: '#f0f0f0' } } },
+        series: types.map((t, i) => ({
+          name: ALERT_TYPES[t].label, type: 'bar', stack: 'alert',
+          data: weekDays.map(() => Math.floor(Math.random() * (t === 'fault' ? 3 : 4))),
+          itemStyle: { color: stackColors[i] }
+        }))
+      });
+    }
+
+    if (w.id === 'healthRadar') {
+      const s = getDashboardStats();
+      const alertHandled = store.alerts.length ? ((store.alerts.filter(a => a.read).length / store.alerts.length) * 100).toFixed(0) : 100;
+      const strategyRate = store.strategies.length ? ((store.strategies.filter(x => x.enabled).length / store.strategies.length) * 100).toFixed(0) : 100;
+      const remoteRate = devs.length ? ((devs.filter(d => d.settings.allowRemote).length / devs.length) * 100).toFixed(0) : 100;
+      const runRate = devs.length ? ((s.onCnt / devs.length) * 100).toFixed(0) : 0;
+      const tempOk = devs.length ? ((devs.filter(d => d.temp >= 20 && d.temp <= 28).length / devs.length) * 100).toFixed(0) : 100;
+      chart.setOption({
+        tooltip: {},
+        radar: {
+          indicator: [
+            { name: '在线率', max: 100 }, { name: '运行率', max: 100 }, { name: '告警处理', max: 100 },
+            { name: '策略执行', max: 100 }, { name: '远程可控', max: 100 }, { name: '温度合规', max: 100 }
+          ],
+          radius: '62%', splitArea: { areaStyle: { color: ['#fff', '#fafafa'] } }
+        },
+        series: [{
+          type: 'radar',
+          data: [{ value: [+s.onlineRate, +runRate, +alertHandled, +strategyRate, +remoteRate, +tempOk], name: '系统健康度',
+            areaStyle: { color: 'rgba(22,119,255,0.2)' }, lineStyle: { color: '#1677ff', width: 2 },
+            itemStyle: { color: '#1677ff' } }]
+        }]
+      });
+    }
+
+    if (w.id === 'tempHeat') {
+      const floors = [...new Set(devs.map(d => d.floor))].sort();
+      const heatData = [];
+      BUILDINGS.forEach((b, bi) => {
+        floors.forEach((f, fi) => {
+          const ds = devs.filter(d => d.building === b && d.floor === f);
+          const val = ds.length ? Math.round(ds.reduce((s, d) => s + d.temp, 0) / ds.length) : '-';
+          if (ds.length) heatData.push([bi, fi, val]);
+        });
+      });
+      chart.setOption({
+        tooltip: { position: 'top', formatter: p => `${BUILDINGS[p.data[0]]} ${floors[p.data[1]]}<br>平均温度: ${p.data[2]}℃` },
+        grid: { left: 80, right: 40, top: 20, bottom: 60 },
+        xAxis: { type: 'category', data: BUILDINGS.map(b => b.replace('大楼', '')), splitArea: { show: true } },
+        yAxis: { type: 'category', data: floors, splitArea: { show: true } },
+        visualMap: { min: 16, max: 30, calculable: true, orient: 'horizontal', left: 'center', bottom: 0,
+          inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#fee090', '#fdae61', '#f46d43', '#d73027'] } },
+        series: [{ type: 'heatmap', data: heatData, label: { show: true, fontSize: 11 }, emphasis: { itemStyle: { shadowBlur: 10 } } }]
+      });
+    }
+
+    if (w.id === 'hourlyLine') {
+      const onData = hours.map(() => Math.floor(Math.random() * devs.length * 0.6 + devs.length * 0.2));
+      const energyData = hours.map(() => Math.floor(Math.random() * 50 + 20));
+      chart.setOption({
+        tooltip: { trigger: 'axis' }, legend: { data: ['运行设备数', '能耗(kWh)'], bottom: 0, textStyle: { fontSize: 12 } },
+        grid: { ...grid, bottom: 40 },
+        xAxis: { type: 'category', data: hours, boundaryGap: false, axisLine: { lineStyle: { color: '#f0f0f0' } } },
+        yAxis: [
+          { type: 'value', name: '台', splitLine: { lineStyle: { color: '#f0f0f0' } } },
+          { type: 'value', name: 'kWh', splitLine: { show: false } }
+        ],
+        series: [
+          { name: '运行设备数', type: 'line', smooth: true, data: onData, itemStyle: { color: '#1677ff' }, areaStyle: { color: 'rgba(22,119,255,0.08)' } },
+          { name: '能耗(kWh)', type: 'line', smooth: true, yAxisIndex: 1, data: energyData, itemStyle: { color: '#52c41a' } }
+        ]
+      });
+    }
+
+    if (w.id === 'modeStack') {
+      const modes = Object.values(MODES);
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: modes, bottom: 0, textStyle: { fontSize: 11 } },
+        grid: { ...grid, bottom: 40 },
+        xAxis: { type: 'category', data: BUILDINGS.map(b => b.replace('大楼', '')), axisLine: { lineStyle: { color: '#f0f0f0' } } },
+        yAxis: { type: 'value', name: '台', splitLine: { lineStyle: { color: '#f0f0f0' } } },
+        series: Object.keys(MODES).map((k, i) => ({
+          name: MODES[k], type: 'bar', stack: 'mode',
+          data: BUILDINGS.map(b => devs.filter(d => d.building === b && d.mode === k).length),
+          itemStyle: { color: ['#1677ff', '#ff4d4f', '#52c41a', '#faad14'][i] }
+        }))
+      });
+    }
+  });
+}
+
+// 1. Overview - Tree
+function renderOverview() {
+  let tree = '';
+  BUILDINGS.forEach(b => {
+    const devs = store.devices.filter(d => d.building === b);
+    tree += `<div style="margin-bottom:12px">
+      <div class="ant-tree-node" onclick="toggleTree(this)">
+        <i class="fas fa-building" style="color:#1677ff"></i>
+        <span class="ant-tree-node-title">${b}</span>
+        ${antTag(devs.length+'台', 'blue')}
+        <i class="fas fa-chevron-down" style="font-size:11px;color:rgba(0,0,0,0.25);margin-left:4px;transition:transform 0.2s"></i>
+      </div>
+      <div class="ant-tree-children">`;
+    devs.forEach(d => {
+      const st = d.power ? statusDot('开机','processing') : statusDot('关机','default');
+      const online = d.online ? statusDot('在线','success') : statusDot('离线','error');
+      tree += `<div class="ant-tree-leaf">
+        <span style="font-weight:500;min-width:200px"><i class="fas fa-wind" style="color:#1677ff;margin-right:6px"></i>${d.name}</span>
+        ${st} ${online} ${antTag(MODES[d.mode],'purple')} ${antTag(FANS[d.fanSpeed],'default')}
+        <span style="color:#1677ff;font-weight:600">${d.temp}℃</span>
+        <span style="color:rgba(0,0,0,0.35);font-size:12px">${d.floor} · ${d.room}</span>
+      </div>`;
+    });
+    tree += '</div></div>';
+  });
+  const onCnt = store.devices.filter(d => d.power).length;
+  const offCnt = store.devices.length - onCnt;
+  const alertCnt = store.alerts.filter(a => !a.read).length;
+  const offlineCnt = store.devices.filter(d => !d.online).length;
+  return pageHeader('运行总览', '按建筑分层展示所有空调设备运行状态') + `
+    <div class="ant-statistic-row">
+      ${statCard('设备总数', store.devices.length, 'fa-server', 'blue', '#1677ff')}
+      ${statCard('开机', onCnt, 'fa-circle-play', 'green', '#52c41a')}
+      ${statCard('关机', offCnt, 'fa-circle-stop', 'gray', 'rgba(0,0,0,0.45)')}
+      ${statCard('未读告警', alertCnt, 'fa-bell', 'red', '#ff4d4f')}
+    </div>
+    ${antCard('设备树形结构', tree, `<span style="font-size:13px;color:rgba(0,0,0,0.45)">离线设备 ${offlineCnt} 台</span>`)}`;
+}
+
+function toggleTree(el) {
+  const child = el.nextElementSibling;
+  const icon = el.querySelector('.fa-chevron-down');
+  child.classList.toggle('hidden');
+  icon.classList.toggle('rotate-180');
+}
+
+// 2. Monitor
+function renderMonitor() {
+  const listView = monitorView === 'list';
+  const toggle = `<div class="ant-toolbar">${antSegmented([{v:'list',l:'<i class="fas fa-list"></i> 列表'},{v:'card',l:'<i class="fas fa-th-large"></i> 卡片'}], monitorView, 'setMonitorView')}
+    <span style="font-size:13px;color:rgba(0,0,0,0.45)">共 ${store.devices.length} 台设备</span></div>`;
+  if (listView) {
+    const rows = store.devices.map(d => `<tr>
+      <td><span style="font-weight:500">${d.name}</span></td><td>${d.building}</td>
+      <td>${d.power ? statusDot('开机','processing') : statusDot('关机','default')}</td>
+      <td>${d.online ? statusDot('在线','success') : statusDot('离线','error')}</td>
+      <td>${antTag(MODES[d.mode],'purple')}</td><td>${antTag(FANS[d.fanSpeed],'default')}</td>
+      <td><span style="font-weight:600;color:#1677ff">${d.temp}℃</span></td>
+    </tr>`).join('');
+    return pageHeader('实时监测', '实时查看所有空调设备运行参数') + toggle +
+      antCard('设备监测列表', antTable(['设备名称','所在楼栋','开关状态','连接状态','运行模式','风速','设定温度'], rows), '', true);
+  }
+  const cards = store.devices.map(d => `
+    <div class="ant-device-card ${d.power?'running':'stopped'}">
+      <div class="ant-device-card-head">
+        <div><div style="font-weight:600;font-size:15px">${d.name}</div><div style="font-size:12px;color:rgba(0,0,0,0.45);margin-top:2px">${d.building} · ${d.floor}</div></div>
+        ${d.power ? antTag('运行中','green') : antTag('已关闭','default')}
+      </div>
+      <div class="ant-device-card-body">
+        <div class="ant-temp-display">${d.temp}<span style="font-size:16px">℃</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-top:8px">
+          <div><span style="color:rgba(0,0,0,0.45)">模式</span><br>${MODES[d.mode]}</div>
+          <div><span style="color:rgba(0,0,0,0.45)">风速</span><br>${FANS[d.fanSpeed]}</div>
+          <div><span style="color:rgba(0,0,0,0.45)">连接</span><br>${d.online?'在线':'离线'}</div>
+          <div><span style="color:rgba(0,0,0,0.45)">房间</span><br>${d.room}</div>
+        </div>
+      </div>
+    </div>`).join('');
+  return pageHeader('实时监测', '实时查看所有空调设备运行参数') + toggle +
+    `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">${cards}</div>`;
+}
+
+function setMonitorView(v) { monitorView = v; renderPage(); }
+
+// 3. Remote Control
+function renderControl() {
+  const cards = store.devices.map(d => {
+    const disabled = !hasPerm('control') ? 'disabled' : '';
+    const lockHint = (d.settings.lockPower||d.settings.lockMode) ? antTag('部分锁定','orange') : '';
+    return `<div class="ant-device-card ${d.power?'running':'stopped'}">
+      <div class="ant-device-card-head">
+        <div><div style="font-weight:600">${d.name}</div><div style="font-size:12px;color:rgba(0,0,0,0.45);margin-top:2px">${d.building}</div></div>
+        ${lockHint}
+      </div>
+      <div class="ant-device-card-body" data-perm="control">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-size:14px">开关机</span>
+          <button ${disabled} onclick="ctrlPower(${d.id})" class="ant-btn perm-control perm-admin perm-operator ${d.power?'ant-btn-danger':'ant-btn-success'} ant-btn-sm">
+            <i class="fas fa-power-off"></i> ${d.power?'关机':'开机'}
+          </button>
+        </div>
+        <div class="ant-form-item"><label class="ant-form-label">运行模式</label>
+          <select ${disabled} onchange="ctrlMode(${d.id},this.value)" class="ant-select perm-control perm-admin perm-operator">
+            ${Object.entries(MODES).map(([k,v])=>`<option value="${k}" ${d.mode===k?'selected':''}>${v}</option>`).join('')}
+          </select></div>
+        <div class="ant-form-item"><label class="ant-form-label">风速</label>
+          <select ${disabled} onchange="ctrlFan(${d.id},this.value)" class="ant-select perm-control perm-admin perm-operator">
+            ${Object.entries(FANS).map(([k,v])=>`<option value="${k}" ${d.fanSpeed===k?'selected':''}>${v}</option>`).join('')}
+          </select></div>
+        <div class="ant-form-item"><label class="ant-form-label">设定温度 (16-30℃)</label>
+          <div class="ant-temp-ctrl">
+            <button ${disabled} onclick="ctrlTemp(${d.id},${d.temp}-1)" class="ant-temp-btn perm-control perm-admin perm-operator"><i class="fas fa-minus" style="font-size:11px"></i></button>
+            <span class="ant-temp-display" style="padding:0;font-size:24px">${d.temp}℃</span>
+            <button ${disabled} onclick="ctrlTemp(${d.id},${d.temp}+1)" class="ant-temp-btn perm-control perm-admin perm-operator"><i class="fas fa-plus" style="font-size:11px"></i></button>
+          </div></div>
+      </div>
+      ${!hasPerm('control')?'<div class="ant-alert ant-alert-warning" style="margin:0 20px 16px"><i class="fas fa-info-circle" style="color:#faad14"></i><span>浏览人员无控制权限，仅可查看</span></div>':''}
+    </div>`;
+  }).join('');
+  return pageHeader('远程控制', '远程控制各空调设备的开关、模式、风速和温度') +
+    `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">${cards}</div>`;
+}
+
+function ctrlPower(id) {
+  const d = store.devices.find(x => x.id === id);
+  if (d.settings.lockPower) { alert('该设备开关机已锁定'); return; }
+  if (!d.settings.allowRemote) { alert('该设备不允许远程控制'); return; }
+  d.power = !d.power;
+  addLog(id, ROLES[currentRole], {
+    channel: 'remote', action: '开关控制', result: d.power ? '设备开机' : '设备关机'
+  });
+  renderPage();
+}
+
+function ctrlMode(id, mode) {
+  const d = store.devices.find(x => x.id === id);
+  if (d.settings.lockMode) { alert('该设备模式已锁定'); renderPage(); return; }
+  const prev = MODES[d.mode];
+  d.mode = mode;
+  addLog(id, ROLES[currentRole], {
+    channel: 'remote', action: '模式切换', result: `切换至${MODES[mode]}模式`, detail: `由${prev}模式调整`
+  });
+  renderPage();
+}
+
+function ctrlFan(id, fan) {
+  const d = store.devices.find(x => x.id === id);
+  const prev = FANS[d.fanSpeed];
+  d.fanSpeed = fan;
+  addLog(id, ROLES[currentRole], {
+    channel: 'remote', action: '风速调节', result: `风速设为${FANS[fan]}`, detail: `由${prev}调整`
+  });
+  renderPage();
+}
+
+function ctrlTemp(id, temp) {
+  const d = store.devices.find(x => x.id === id);
+  temp = Math.max(16, Math.min(30, temp));
+  if (d.mode === 'cool' && temp < d.settings.coolMin) { alert(`制冷模式下不能低于${d.settings.coolMin}℃`); return; }
+  if (d.mode === 'heat' && temp > d.settings.heatMax) { alert(`制热模式下不能高于${d.settings.heatMax}℃`); return; }
+  const prev = d.temp;
+  d.temp = temp;
+  addLog(id, ROLES[currentRole], {
+    channel: 'remote', action: '温度设定', result: `温度调至${temp}℃`, detail: `由 ${prev}℃ 调整至 ${temp}℃`
+  });
+  renderPage();
+}
+
+// 4. Strategy
+function renderStrategy() {
+  const rows = store.strategies.map(s => {
+    const devNames = s.deviceIds.map(id => store.devices.find(d=>d.id===id)?.name).filter(Boolean).join(', ');
+    const days = ['日','一','二','三','四','五','六'];
+    const dayStr = s.days.map(d => '周'+days[d]).join(' ');
+    const actionMap = { power: s.value==='on'?'开机':'关机', mode:'模式→'+MODES[s.value], temp:'温度→'+s.value+'℃' };
+    return `<tr>
+      <td><span style="font-weight:500">${s.name}</span></td><td style="font-size:12px;color:rgba(0,0,0,0.65)">${devNames}</td><td>${s.time}</td>
+      <td style="font-size:12px">${dayStr}</td><td>${actionMap[s.action]||s.action}</td>
+      <td>${s.enabled ? antTag('启用','green') : antTag('禁用','default')}</td>
+      <td data-perm="manage">
+        <button onclick="editStrategy(${s.id})" class="ant-btn ant-btn-link ant-btn-sm">编辑</button>
+        <button onclick="toggleStrategy(${s.id})" class="ant-btn ant-btn-link ant-btn-link-warning ant-btn-sm">${s.enabled?'禁用':'启用'}</button>
+        <button onclick="deleteStrategy(${s.id})" class="ant-btn ant-btn-link ant-btn-link-danger ant-btn-sm">删除</button>
+      </td></tr>`;
+  }).join('');
+  return pageHeader('自动策略', '配置定时自动控制策略') + `
+    <div class="ant-toolbar" data-perm="manage">
+      <button onclick="editStrategy(0)" class="ant-btn ant-btn-primary"><i class="fas fa-plus"></i> 添加策略</button>
+    </div>
+    ${antCard('策略列表', antTable(['策略名称','关联设备','执行时间','重复周期','执行动作','状态','操作'], rows), `<span style="font-size:13px;color:rgba(0,0,0,0.45)">${store.strategies.length} 条策略</span>`, true)}`;
+}
+
+function editStrategy(id) {
+  const s = id ? store.strategies.find(x=>x.id===id) : { name:'', deviceIds:[], time:'08:00', days:[1,2,3,4,5], action:'power', value:'on', enabled:true };
+  const devOpts = store.devices.map(d => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 0"><input type="checkbox" name="sDev" value="${d.id}" ${s.deviceIds.includes(d.id)?'checked':''}> ${d.name}</label>`).join('');
+  const dayOpts = [0,1,2,3,4,5,6].map(d => {
+    const names=['日','一','二','三','四','五','六'];
+    return `<label style="font-size:13px;margin-right:8px"><input type="checkbox" name="sDay" value="${d}" ${s.days.includes(d)?'checked':''}> 周${names[d]}</label>`;
+  }).join('');
+  showModal(`<div class="ant-modal-header">${id?'编辑':'添加'}策略</div>
+    <div class="ant-modal-body">
+      <div class="ant-form-item"><label class="ant-form-label">策略名称</label><input id="sName" value="${s.name}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">执行时间</label><input id="sTime" type="time" value="${s.time}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">重复日期</label><div style="margin-top:4px">${dayOpts}</div></div>
+      <div class="ant-form-item"><label class="ant-form-label">动作类型</label><select id="sAction" onchange="updateStrategyValue()" class="ant-select">
+        <option value="power" ${s.action==='power'?'selected':''}>开关机</option>
+        <option value="mode" ${s.action==='mode'?'selected':''}>模式</option>
+        <option value="temp" ${s.action==='temp'?'selected':''}>温度</option>
+      </select></div>
+      <div class="ant-form-item" id="sValueBox"><label class="ant-form-label">动作值</label><select id="sValue" class="ant-select"></select></div>
+      <div class="ant-form-item"><label class="ant-form-label">关联设备</label><div style="max-height:120px;overflow-y:auto;margin-top:4px">${devOpts}</div></div>
+    </div>
+    <div class="ant-modal-footer">
+      <button onclick="closeModal()" class="ant-btn ant-btn-default">取消</button>
+      <button onclick="saveStrategy(${id})" class="ant-btn ant-btn-primary">保存</button>
+    </div>`);
+  updateStrategyValue(s.value);
+}
+
+function updateStrategyValue(val) {
+  const action = document.getElementById('sAction')?.value || 'power';
+  const box = document.getElementById('sValue');
+  if (!box) return;
+  if (action === 'power') box.innerHTML = '<option value="on">开机</option><option value="off">关机</option>';
+  else if (action === 'mode') box.innerHTML = Object.entries(MODES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  else box.innerHTML = Array.from({length:15},(_,i)=>`<option value="${i+16}">${i+16}℃</option>`).join('');
+  if (val) box.value = val;
+}
+
+function saveStrategy(id) {
+  const data = {
+    name: document.getElementById('sName').value,
+    time: document.getElementById('sTime').value,
+    days: [...document.querySelectorAll('[name=sDay]:checked')].map(e=>+e.value),
+    action: document.getElementById('sAction').value,
+    value: document.getElementById('sValue').value,
+    deviceIds: [...document.querySelectorAll('[name=sDev]:checked')].map(e=>+e.value),
+    enabled: true
+  };
+  if (!data.name || !data.deviceIds.length) { alert('请填写名称并选择设备'); return; }
+  if (id) Object.assign(store.strategies.find(x=>x.id===id), data);
+  else { data.id = store.nextIds.strategy++; store.strategies.push(data); }
+  closeModal(); renderPage();
+}
+
+function toggleStrategy(id) { const s = store.strategies.find(x=>x.id===id); s.enabled = !s.enabled; renderPage(); }
+function deleteStrategy(id) { if(confirm('确认删除？')) { store.strategies = store.strategies.filter(x=>x.id!==id); renderPage(); } }
+
+// 5. Alerts
+const ALERT_LEVEL_MAP = { high: '高', medium: '中', low: '低' };
+const ALERT_LEVEL_TAG = { high: 'red', medium: 'orange', low: 'blue' };
+
+function getFilteredAlerts() {
+  return sortAlertsByTime(store.alerts.filter(a => {
+    if (alertFilterType && a.type !== alertFilterType) return false;
+    if (alertFilterStatus === 'unread' && a.read) return false;
+    if (alertFilterStatus === 'read' && !a.read) return false;
+    return true;
+  }));
+}
+
+function renderAlertRows(alerts) {
+  if (!alerts.length) {
+    return '<tr><td colspan="7" style="padding:32px;text-align:center;color:rgba(0,0,0,0.25)">暂无符合条件的告警</td></tr>';
+  }
+  return alerts.map(a => {
+    const dev = store.devices.find(d => d.id === a.deviceId);
+    const typeDef = ALERT_TYPES[a.type];
+    return `<tr class="${a.read ? '' : 'row-unread'}">
+      <td style="font-size:13px;color:rgba(0,0,0,0.65)">${a.time}</td>
+      <td><span style="font-weight:500">${dev?.name || '-'}</span><br><span style="font-size:12px;color:rgba(0,0,0,0.35)">${dev ? dev.building + ' · ' + dev.room : ''}</span></td>
+      <td>${antTag(typeDef?.label || a.type, typeDef?.tag || 'default')}</td>
+      <td>${antTag(ALERT_LEVEL_MAP[a.level] || a.level, ALERT_LEVEL_TAG[a.level] || 'default')}</td>
+      <td>${a.msg}</td>
+      <td>${a.read ? antTag('已读', 'default') : antTag('未读', 'red')}</td>
+      <td>${a.read ? '<span style="color:rgba(0,0,0,0.25);font-size:13px">—</span>' : `<button onclick="markAlertRead(${a.id})" class="ant-btn ant-btn-link ant-btn-sm">标记已读</button>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAlerts() {
+  const items = getFilteredAlerts();
+  const unread = store.alerts.filter(a => !a.read).length;
+  const typeOpts = ALERT_TYPE_KEYS.map(k =>
+    `<option value="${k}" ${alertFilterType === k ? 'selected' : ''}>${ALERT_TYPES[k].label}</option>`
+  ).join('');
+  const filterBar = `<div class="ant-filter-bar" style="flex-wrap:wrap;margin-bottom:0">
+    <div class="ant-filter-item"><label>告警类型</label>
+      <select id="alertTypeFilter" class="ant-select">
+        <option value="" ${!alertFilterType ? 'selected' : ''}>全部类型</option>${typeOpts}
+      </select></div>
+    <div class="ant-filter-item"><label>阅读状态</label>
+      <select id="alertStatusFilter" class="ant-select">
+        <option value="" ${!alertFilterStatus ? 'selected' : ''}>全部</option>
+        <option value="unread" ${alertFilterStatus === 'unread' ? 'selected' : ''}>仅未读</option>
+        <option value="read" ${alertFilterStatus === 'read' ? 'selected' : ''}>仅已读</option>
+      </select></div>
+    <button onclick="applyAlertFilters()" class="ant-btn ant-btn-primary"><i class="fas fa-search"></i> 查询</button>
+    <button onclick="resetAlertFilters()" class="ant-btn ant-btn-default">重置</button>
+  </div>`;
+  const typeChips = ALERT_TYPE_KEYS.map(k => {
+    const cnt = store.alerts.filter(a => a.type === k).length;
+    return `<span class="ant-tag ant-tag-${ALERT_TYPES[k].tag}" style="margin-right:6px;margin-bottom:4px">${ALERT_TYPES[k].label} ${cnt}</span>`;
+  }).join('');
+  return pageHeader('异常告警', '查看和管理系统告警信息') + `
+    <div class="ant-statistic-row" style="grid-template-columns:repeat(3,1fr)">
+      ${statCard('告警总数', store.alerts.length, 'fa-list', 'blue', '#1677ff')}
+      ${statCard('未读告警', unread, 'fa-bell', 'red', '#ff4d4f')}
+      ${statCard('已处理', store.alerts.filter(a => a.read).length, 'fa-check-circle', 'green', '#52c41a')}
+    </div>
+    ${antCard('筛选条件', filterBar, '')}
+    <div class="ant-toolbar" style="margin-top:12px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+        <span style="font-size:13px;color:rgba(0,0,0,0.45)">类型分布：</span>${typeChips}
+      </div>
+      <button onclick="markAllAlertsRead()" class="ant-btn ant-btn-default ant-btn-sm">全部已读</button>
+    </div>
+    ${antCard('告警列表', `<div class="ant-table-wrapper"><table class="ant-table"><thead><tr>
+      <th>告警时间</th><th>设备</th><th>类型</th><th>级别</th><th>描述</th><th>状态</th><th>操作</th>
+    </tr></thead><tbody id="alertBody">${renderAlertRows(items)}</tbody></table></div>`,
+      `<span id="alertFilterCount" style="font-size:13px;color:rgba(0,0,0,0.45)">共 ${items.length} 条记录</span>`, true)}`;
+}
+
+function applyAlertFilters() {
+  alertFilterType = document.getElementById('alertTypeFilter')?.value || '';
+  alertFilterStatus = document.getElementById('alertStatusFilter')?.value || '';
+  const items = getFilteredAlerts();
+  const body = document.getElementById('alertBody');
+  if (body) body.innerHTML = renderAlertRows(items);
+  const cnt = document.getElementById('alertFilterCount');
+  if (cnt) cnt.textContent = `共 ${items.length} 条记录`;
+}
+
+function resetAlertFilters() {
+  alertFilterType = '';
+  alertFilterStatus = '';
+  renderPage();
+}
+
+function markAlertRead(id) {
+  const a = store.alerts.find(x => x.id === id);
+  if (a) a.read = true;
+  updateNotifBadge();
+  applyAlertFilters();
+}
+
+function markAllAlertsRead() {
+  store.alerts.forEach(a => a.read = true);
+  updateNotifBadge();
+  renderPage();
+}
+
+// 6. Logs
+function renderLogs() {
+  const remoteCnt = store.logs.filter(l => l.channel === 'remote').length;
+  const offlineCnt = store.logs.filter(l => l.channel === 'offline').length;
+  const filterBar = `<div class="ant-filter-bar">
+    <div class="ant-filter-item"><label>设备</label><select id="logDevice" class="ant-select">
+      <option value="">全部设备</option>${store.devices.map(d=>`<option value="${d.id}">${d.name}</option>`).join('')}
+    </select></div>
+    <div class="ant-filter-item"><label>操作类型</label><select id="logChannel" class="ant-select">
+      <option value="">全部</option><option value="remote">远程</option><option value="offline">线下</option>
+    </select></div>
+    <div class="ant-filter-item"><label>操作内容</label><select id="logActionType" class="ant-select">
+      <option value="">全部</option>
+      <option value="开关控制">开关控制</option><option value="温度设定">温度设定</option>
+      <option value="模式切换">模式切换</option><option value="风速调节">风速调节</option>
+    </select></div>
+    <div class="ant-filter-item"><label>执行结果</label><input id="logResult" placeholder="如：设备关机、温度调至26℃" class="ant-input"></div>
+    <button onclick="searchLogs()" class="ant-btn ant-btn-primary"><i class="fas fa-search"></i> 查询</button>
+    <button onclick="resetLogSearch()" class="ant-btn ant-btn-default">重置</button>
+  </div>`;
+  const table = `<div class="ant-table-wrapper"><table class="ant-table"><thead><tr>
+    <th>操作时间</th><th>设备</th><th>操作人</th><th>操作类型</th><th>操作内容</th><th>执行结果</th><th>状态</th>
+  </tr></thead><tbody id="logBody">${renderLogRows(store.logs.slice(0, 200))}</tbody></table></div>`;
+  return pageHeader('运行日志', '记录每台空调每次操作的完整过程：操作时间精确到秒，区分远程与线下，并展示具体执行结果') + `
+    <div class="ant-statistic-row" style="grid-template-columns:repeat(3,1fr)">
+      ${statCard('日志总数', store.logs.length, 'fa-list', 'blue', '#1677ff')}
+      ${statCard('远程操作', remoteCnt, 'fa-wifi', 'blue', '#1677ff')}
+      ${statCard('线下操作', offlineCnt, 'fa-person-walking', 'green', '#52c41a')}
+    </div>
+    ${antCard('筛选条件', filterBar, '')}
+    <div style="margin-top:16px">${antCard('操作日志', table, `<span style="font-size:13px;color:rgba(0,0,0,0.45)">显示最近 ${Math.min(200, store.logs.length)} 条 · 共 ${store.logs.length} 条</span>`, true)}</div>`;
+}
+
+function renderLogRows(logs) {
+  return logs.map(l => {
+    const chTag = l.channel === 'remote' ? antTag('远程', 'blue') : antTag('线下', 'green');
+    const resultHtml = `<span style="font-weight:500">${l.result || '-'}</span>${l.detail ? `<br><span style="font-size:12px;color:rgba(0,0,0,0.45)">${l.detail}</span>` : ''}`;
+    return `<tr>
+      <td style="font-family:monospace;font-size:13px;color:rgba(0,0,0,0.88);white-space:nowrap">${l.time}</td>
+      <td><span style="font-weight:500">${l.deviceName}</span></td>
+      <td>${l.operator}</td>
+      <td>${chTag}</td>
+      <td>${l.action || '-'}</td>
+      <td>${resultHtml}</td>
+      <td>${l.status === 'success' ? antTag('成功', 'green') : antTag('失败', 'red')}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="padding:32px;text-align:center;color:rgba(0,0,0,0.25)">暂无日志</td></tr>';
+}
+
+function searchLogs() {
+  let logs = [...store.logs];
+  const dev = document.getElementById('logDevice')?.value;
+  const channel = document.getElementById('logChannel')?.value;
+  const actionType = document.getElementById('logActionType')?.value;
+  const result = document.getElementById('logResult')?.value?.trim();
+  if (dev) logs = logs.filter(l => l.deviceId === +dev);
+  if (channel) logs = logs.filter(l => l.channel === channel);
+  if (actionType) logs = logs.filter(l => l.action === actionType);
+  if (result) logs = logs.filter(l => (l.result + (l.detail || '')).includes(result));
+  document.getElementById('logBody').innerHTML = renderLogRows(logs);
+}
+
+function resetLogSearch() {
+  ['logDevice', 'logChannel', 'logActionType', 'logResult'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('logBody').innerHTML = renderLogRows(store.logs.slice(0, 200));
+}
+
+// 7. Stats
+function fmtDateInput(d) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+function getDefaultStatDates() {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - 6);
+  return { start: fmtDateInput(start), end: fmtDateInput(end) };
+}
+
+function getDefaultBillCycleDates() {
+  const end = new Date();
+  const start = new Date(end.getFullYear(), end.getMonth(), 1);
+  return { cycleStart: fmtDateInput(start), cycleEnd: fmtDateInput(end) };
+}
+
+function getBillCycleLabel() {
+  const s = store.billing?.settings;
+  if (!s?.cycleStart || !s?.cycleEnd) return '-';
+  return `${s.cycleStart} ~ ${s.cycleEnd}`;
+}
+
+function getAllStatTags() {
+  const fromDevices = store.devices.flatMap(d => d.tags);
+  return [...new Set([...(store.statCustomTags || []), ...fromDevices])];
+}
+
+function getStatDateLabels() {
+  const startVal = document.getElementById('statDateStart')?.value || statDateStart;
+  const endVal = document.getElementById('statDateEnd')?.value || statDateEnd;
+  if (!startVal || !endVal) {
+    const def = getDefaultStatDates();
+    return getStatDateLabelsFromRange(def.start, def.end);
+  }
+  return getStatDateLabelsFromRange(startVal, endVal);
+}
+
+function getStatDateLabelsFromRange(startStr, endStr) {
+  const s = new Date(startStr + 'T00:00:00');
+  const e = new Date(endStr + 'T00:00:00');
+  if (isNaN(s.getTime()) || isNaN(e.getTime()) || s > e) return ['日期无效'];
+  const totalDays = Math.ceil((e - s) / 86400000) + 1;
+  const labels = [];
+  if (totalDays <= 31) {
+    const cur = new Date(s);
+    while (cur <= e) {
+      labels.push(`${cur.getMonth() + 1}/${cur.getDate()}`);
+      cur.setDate(cur.getDate() + 1);
+    }
+    return labels;
+  }
+  const step = Math.max(1, Math.ceil(totalDays / 12));
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(s);
+    d.setDate(d.getDate() + i * step);
+    if (d > e) break;
+    labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+  }
+  return labels.length ? labels : [`${startStr.slice(5)}~${endStr.slice(5)}`];
+}
+
+function renderStats() {
+  const def = getDefaultStatDates();
+  if (!statDateStart) statDateStart = def.start;
+  if (!statDateEnd) statDateEnd = def.end;
+  const tagOpts = getAllStatTags().map(t => `<option value="${t}">${t}</option>`).join('');
+  const filterBar = `<div class="ant-filter-bar" style="flex-wrap:wrap">
+    <div class="ant-filter-item"><label>开始日期</label>
+      <input id="statDateStart" type="date" class="ant-input" value="${statDateStart}" onchange="statDateStart=this.value"></div>
+    <div class="ant-filter-item"><label>结束日期</label>
+      <input id="statDateEnd" type="date" class="ant-input" value="${statDateEnd}" onchange="statDateEnd=this.value"></div>
+    <div class="ant-filter-item"><label>位置</label><select id="statBuilding" class="ant-select">
+      <option value="">全部楼栋</option>${BUILDINGS.map(b=>`<option value="${b}">${b}</option>`).join('')}
+    </select></div>
+    <div class="ant-filter-item"><label>空调类型</label><select id="statAcType" class="ant-select">
+      <option value="">全部类型</option>
+      ${Object.entries(AC_TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+    </select></div>
+    <div class="ant-filter-item"><label>状态</label><select id="statStatus" class="ant-select">
+      <option value="">全部</option><option value="on">开机</option><option value="off">关机</option>
+    </select></div>
+    <div class="ant-filter-item"><label>标签</label>
+      <select id="statTag" class="ant-select"><option value="">全部标签</option>${tagOpts}</select>
+    </div>
+    <button onclick="openCustomTagModal()" class="ant-btn ant-btn-default"><i class="fas fa-tags"></i> 自定义标签</button>
+    <button onclick="applyStatFilter()" class="ant-btn ant-btn-primary"><i class="fas fa-filter"></i> 筛选</button>
+    <button onclick="exportCSV()" class="ant-btn ant-btn-default"><i class="fas fa-download"></i> 导出 CSV</button>
+  </div>`;
+  return pageHeader('查询统计') +
+    antCard('筛选条件', filterBar, '') + `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div class="ant-card"><div class="ant-card-body"><div id="chartRun" style="height:300px"></div></div></div>
+      <div class="ant-card"><div class="ant-card-body"><div id="chartBuilding" style="height:300px"></div></div></div>
+    </div>
+    <div class="ant-card" style="margin-top:16px"><div class="ant-card-body"><div id="chartEnergy" style="height:320px"></div></div></div>`;
+}
+
+function applyStatFilter() {
+  statDateStart = document.getElementById('statDateStart')?.value || statDateStart;
+  statDateEnd = document.getElementById('statDateEnd')?.value || statDateEnd;
+  if (statDateStart && statDateEnd && statDateStart > statDateEnd) {
+    alert('开始日期不能晚于结束日期');
+    return;
+  }
+  initCharts();
+}
+
+function openCustomTagModal() {
+  const allTags = getAllStatTags();
+  const current = document.getElementById('statTag')?.value || '';
+  const list = allTags.map(t => `
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 0;cursor:pointer;font-size:14px">
+      <input type="radio" name="statTagPick" value="${t}" ${current===t?'checked':''}> ${t}
+    </label>`).join('');
+  showModal(`<div class="ant-modal-header"><i class="fas fa-tags" style="color:#1677ff;margin-right:8px"></i>自定义标签</div>
+    <div class="ant-modal-body">
+      <div class="ant-alert ant-alert-info" style="margin-bottom:16px">
+        <i class="fas fa-info-circle" style="color:#1677ff"></i>
+        <span>选择已有标签筛选，或新增自定义标签加入筛选列表</span>
+      </div>
+      <div class="ant-form-item"><label class="ant-form-label">选择标签</label><div>${list || '<span style="color:rgba(0,0,0,0.35)">暂无标签</span>'}</div></div>
+      <div class="ant-form-item"><label class="ant-form-label">新增自定义标签</label>
+        <div style="display:flex;gap:8px">
+          <input id="newStatTag" class="ant-input" placeholder="输入标签名称，如：节能试点">
+          <button onclick="addStatCustomTag()" class="ant-btn ant-btn-default">添加</button>
+        </div></div>
+    </div>
+    <div class="ant-modal-footer">
+      <button onclick="closeModal()" class="ant-btn ant-btn-default">取消</button>
+      <button onclick="applyStatTagFilter()" class="ant-btn ant-btn-primary">应用筛选</button>
+    </div>`);
+}
+
+function addStatCustomTag() {
+  const name = document.getElementById('newStatTag')?.value?.trim();
+  if (!name) { alert('请输入标签名称'); return; }
+  if (!store.statCustomTags.includes(name)) store.statCustomTags.push(name);
+  closeModal();
+  renderPage();
+  setTimeout(() => openCustomTagModal(), 50);
+}
+
+function applyStatTagFilter() {
+  const picked = document.querySelector('[name=statTagPick]:checked')?.value || '';
+  closeModal();
+  renderPage();
+  setTimeout(() => {
+    const sel = document.getElementById('statTag');
+    if (sel && picked) sel.value = picked;
+    applyStatFilter();
+  }, 80);
+}
+
+function getFilteredDevices() {
+  const b = document.getElementById('statBuilding')?.value;
+  const st = document.getElementById('statStatus')?.value;
+  const tag = document.getElementById('statTag')?.value;
+  const acType = document.getElementById('statAcType')?.value;
+  return store.devices.filter(d => {
+    if (b && d.building !== b) return false;
+    if (st === 'on' && !d.power) return false;
+    if (st === 'off' && d.power) return false;
+    if (tag && !d.tags.includes(tag)) return false;
+    if (acType && d.acType !== acType) return false;
+    return true;
+  });
+}
+
+function initCharts() {
+  const devs = getFilteredDevices();
+  const labels = getStatDateLabels();
+  const rangeText = `${document.getElementById('statDateStart')?.value || statDateStart} ~ ${document.getElementById('statDateEnd')?.value || statDateEnd}`;
+  const runData = labels.map(() => Math.floor(Math.random() * devs.length + 1));
+  const chartRun = echarts.init(document.getElementById('chartRun'));
+  chartRun.setOption({
+    title: { text: '运行时长统计 (' + rangeText + ')', textStyle: { fontSize: 14, fontWeight: 600, color: 'rgba(0,0,0,0.88)' } },
+    tooltip: { trigger: 'axis' }, grid: { left: 50, right: 20, top: 50, bottom: 30 },
+    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: '#f0f0f0' } } },
+    yAxis: { type: 'value', name: '小时', splitLine: { lineStyle: { color: '#f0f0f0' } } },
+    series: [{ type: 'bar', data: runData, itemStyle: { color: '#1677ff', borderRadius: [4, 4, 0, 0] }, barWidth: '40%' }]
+  });
+  const bData = BUILDINGS.map(b => devs.filter(d => d.building === b && d.power).length);
+  const chartB = echarts.init(document.getElementById('chartBuilding'));
+  chartB.setOption({
+    title: { text: '各楼栋开机设备数', textStyle: { fontSize: 14, fontWeight: 600, color: 'rgba(0,0,0,0.88)' } },
+    tooltip: { trigger: 'item' }, color: ['#1677ff', '#52c41a', '#faad14'],
+    series: [{ type: 'pie', radius: ['42%', '68%'], center: ['50%', '55%'],
+      data: BUILDINGS.map((b, i) => ({ name: b.replace('大楼', ''), value: bData[i] })),
+      label: { formatter: '{b}\n{c}台', fontSize: 12 }, itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 }
+    }]
+  });
+  const chartE = echarts.init(document.getElementById('chartEnergy'));
+  chartE.setOption({
+    title: { text: '能耗趋势 (kWh) · ' + rangeText, textStyle: { fontSize: 14, fontWeight: 600, color: 'rgba(0,0,0,0.88)' } },
+    tooltip: { trigger: 'axis' }, legend: { data: BUILDINGS.map(b => b.replace('大楼', '')), bottom: 0, textStyle: { fontSize: 12 } },
+    grid: { left: 50, right: 20, top: 50, bottom: 40 },
+    xAxis: { type: 'category', data: labels, axisLine: { lineStyle: { color: '#f0f0f0' } } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f0f0' } } },
+    series: BUILDINGS.map((b, i) => ({
+      name: b.replace('大楼', ''), type: 'line', smooth: true, symbol: 'circle', symbolSize: 6,
+      data: labels.map(() => Math.floor(Math.random() * 200 + 100)),
+      lineStyle: { width: 2 }, itemStyle: { color: ['#1677ff', '#52c41a', '#faad14'][i] }
+    }))
+  });
+}
+
+function exportCSV() {
+  const devs = getFilteredDevices();
+  const start = document.getElementById('statDateStart')?.value || statDateStart;
+  const end = document.getElementById('statDateEnd')?.value || statDateEnd;
+  let csv = `统计区间,${start},${end}\n`;
+  csv += '设备名称,楼栋,楼层,房间,空调类型,状态,模式,风速,温度,品牌,型号,标签\n';
+  devs.forEach(d => {
+    csv += `${d.name},${d.building},${d.floor},${d.room},${AC_TYPES[d.acType]||d.acType},${d.power?'开机':'关机'},${MODES[d.mode]},${FANS[d.fanSpeed]},${d.temp},${d.brand},${d.model},${d.tags.join(';')}\n`;
+  });
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = '空调运行统计_' + start + '_' + end + '.csv'; a.click();
+}
+
+// 8. Device Management
+function renderDevices() {
+  const rows = store.devices.map(d => `<tr>
+    <td><span style="font-weight:500">${d.name}</span></td><td>${d.building}</td><td>${d.floor} / ${d.room}</td>
+    <td>${antTag(AC_TYPES[d.acType] || d.acType, 'purple')}</td>
+    <td>${d.brand} ${d.model}</td><td>${d.tags.map(t=>antTag(t,'blue')).join(' ')}</td>
+    <td><button onclick="editDevice(${d.id})" class="ant-btn ant-btn-link ant-btn-sm">编辑</button>
+      <button onclick="deleteDevice(${d.id})" class="ant-btn ant-btn-link ant-btn-link-danger ant-btn-sm">删除</button></td>
+  </tr>`).join('');
+  return pageHeader('设备管理', '维护空调设备信息和标签') + `
+    <div class="ant-toolbar"><button onclick="editDevice(0)" class="ant-btn ant-btn-primary"><i class="fas fa-plus"></i> 添加设备</button></div>
+    ${antCard('设备列表', antTable(['设备名称','所在楼栋','位置','空调类型','品牌型号','标签','操作'], rows), `<span style="font-size:13px;color:rgba(0,0,0,0.45)">共 ${store.devices.length} 台</span>`, true)}`;
+}
+
+function editDevice(id) {
+  const d = id ? store.devices.find(x=>x.id===id) : { name:'', building:BUILDINGS[0], floor:'1F', room:'', brand:'', model:'', acType:'vrf', tags:['实验室'] };
+  showModal(`<div class="ant-modal-header">${id?'编辑':'添加'}设备</div>
+    <div class="ant-modal-body">
+      <div class="ant-form-item"><label class="ant-form-label">设备名称</label><input id="dName" value="${d.name}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">所在楼栋</label><select id="dBuilding" class="ant-select">${BUILDINGS.map(b=>`<option ${d.building===b?'selected':''}>${b}</option>`).join('')}</select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="ant-form-item"><label class="ant-form-label">楼层</label><input id="dFloor" value="${d.floor}" class="ant-input"></div>
+        <div class="ant-form-item"><label class="ant-form-label">房间号</label><input id="dRoom" value="${d.room}" class="ant-input"></div>
+      </div>
+      <div class="ant-form-item"><label class="ant-form-label">空调类型</label><select id="dAcType" class="ant-select">
+        ${Object.entries(AC_TYPES).map(([k,v])=>`<option value="${k}" ${d.acType===k?'selected':''}>${v}</option>`).join('')}
+      </select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="ant-form-item"><label class="ant-form-label">品牌</label><input id="dBrand" value="${d.brand}" class="ant-input"></div>
+        <div class="ant-form-item"><label class="ant-form-label">型号</label><input id="dModel" value="${d.model}" class="ant-input"></div>
+      </div>
+      <div class="ant-form-item"><label class="ant-form-label">标签（逗号分隔）</label><input id="dTags" value="${d.tags.join(',')}" class="ant-input"></div>
+    </div>
+    <div class="ant-modal-footer">
+      <button onclick="closeModal()" class="ant-btn ant-btn-default">取消</button>
+      <button onclick="saveDevice(${id})" class="ant-btn ant-btn-primary">保存</button>
+    </div>`);
+}
+
+function saveDevice(id) {
+  const data = {
+    name: document.getElementById('dName').value,
+    building: document.getElementById('dBuilding').value,
+    floor: document.getElementById('dFloor').value,
+    room: document.getElementById('dRoom').value,
+    brand: document.getElementById('dBrand').value,
+    model: document.getElementById('dModel').value,
+    acType: document.getElementById('dAcType').value,
+    tags: document.getElementById('dTags').value.split(',').map(t=>t.trim()).filter(Boolean)
+  };
+  if (!data.name) { alert('请填写设备名称'); return; }
+  if (id) Object.assign(store.devices.find(x=>x.id===id), data);
+  else {
+    data.id = store.devices.length+1; data.power=false; data.mode='cool'; data.fanSpeed='auto'; data.temp=26; data.online=true; data.acType=data.acType||'vrf';
+    data.settings = { lockPower:false, lockMode:false, coolMin:16, heatMax:30, allowRemote:true, allowBind:true, alertOffHours:true, offHoursStart:'22:00', offHoursEnd:'06:00' };
+    store.devices.push(data);
+  }
+  closeModal(); renderPage();
+}
+
+function deleteDevice(id) { if(confirm('确认删除设备？')) { store.devices = store.devices.filter(x=>x.id!==id); renderPage(); } }
+
+// 9. Settings
+function renderSettings() {
+  const cards = store.devices.map(d => {
+    const s = d.settings;
+    const chk = (checked, id, key) => `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px;cursor:pointer">
+      <input type="checkbox" ${checked?'checked':''} onchange="updateSetting(${d.id},'${key}',this.checked)" style="width:16px;height:16px;accent-color:#1677ff"> ${id}</label>`;
+    return `<div class="ant-device-card">
+      <div class="ant-device-card-head">
+        <div><div style="font-weight:600">${d.name}</div><div style="font-size:12px;color:rgba(0,0,0,0.45);margin-top:2px">${d.building}</div></div>
+        ${antTag(s.allowRemote?'远程可控':'远程禁用', s.allowRemote?'green':'default')}
+      </div>
+      <div class="ant-device-card-body" style="font-size:14px">
+        <div style="margin-bottom:12px;font-weight:500;color:rgba(0,0,0,0.65);font-size:13px">锁定控制</div>
+        ${chk(s.lockPower,'开关机锁定','lockPower')} ${chk(s.lockMode,'模式锁定','lockMode')}
+        <div style="margin:12px 0 8px;font-weight:500;color:rgba(0,0,0,0.65);font-size:13px">温度限制</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:70px;color:rgba(0,0,0,0.65)">制冷下限</span>
+          <input type="number" min="16" max="30" value="${s.coolMin}" class="ant-input" style="width:80px" onchange="updateSetting(${d.id},'coolMin',+this.value)"> ℃</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:70px;color:rgba(0,0,0,0.65)">制热上限</span>
+          <input type="number" min="16" max="30" value="${s.heatMax}" class="ant-input" style="width:80px" onchange="updateSetting(${d.id},'heatMax',+this.value)"> ℃</div>
+        <div style="margin:12px 0 8px;font-weight:500;color:rgba(0,0,0,0.65);font-size:13px">非工作时段</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <input type="time" value="${s.offHoursStart}" class="ant-input" style="width:auto" onchange="updateSetting(${d.id},'offHoursStart',this.value)">
+          <span style="color:rgba(0,0,0,0.45)">至</span>
+          <input type="time" value="${s.offHoursEnd}" class="ant-input" style="width:auto" onchange="updateSetting(${d.id},'offHoursEnd',this.value)">
+        </div>
+        <div style="margin-bottom:8px;font-weight:500;color:rgba(0,0,0,0.65);font-size:13px">权限与告警</div>
+        ${chk(s.allowRemote,'允许远程控制','allowRemote')} ${chk(s.allowBind,'允许终端用户绑定','allowBind')} ${chk(s.alertOffHours,'非工作时间开机告警','alertOffHours')}
+      </div></div>`;
+  }).join('');
+  return pageHeader('运行设置', '配置各空调设备的锁定策略和告警规则') +
+    `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">${cards}</div>`;
+}
+
+// 10. Users
+function renderUsers() {
+  const roleTag = { admin:'red', operator:'blue', viewer:'default' };
+  const rows = store.users.map(u => `<tr>
+    <td><span style="font-weight:500">${u.name}</span></td><td>${u.username}</td>
+    <td>${antTag(ROLES[u.role], roleTag[u.role])}</td><td>${u.phone}</td><td>${u.dept}</td>
+    <td><button onclick="editUser(${u.id})" class="ant-btn ant-btn-link ant-btn-sm">编辑</button>
+      <button onclick="deleteUser(${u.id})" class="ant-btn ant-btn-link ant-btn-link-danger ant-btn-sm">删除</button></td>
+  </tr>`).join('');
+  return pageHeader('用户管理', '管理系统用户及角色权限') + `
+    <div class="ant-toolbar"><button onclick="editUser(0)" class="ant-btn ant-btn-primary"><i class="fas fa-plus"></i> 添加用户</button></div>
+    ${antCard('用户列表', antTable(['姓名','用户名','角色','电话','部门','操作'], rows), '', true)}
+    <div class="ant-alert ant-alert-info" style="margin-top:16px">
+      <i class="fas fa-info-circle" style="color:#1677ff;margin-top:2px"></i>
+      <div><div style="font-weight:600;margin-bottom:4px">角色权限说明</div>
+      <div style="font-size:13px;line-height:1.8;color:rgba(0,0,0,0.65)">
+        管理人员 — 全部权限（控制、管理、设置、用户）<br>
+        操作人员 — 控制权限（远程控制、策略查看）<br>
+        浏览人员 — 仅查看（无控制和管理操作）
+      </div></div>
+    </div>`;
+}
+
+function editUser(id) {
+  const u = id ? store.users.find(x=>x.id===id) : { name:'', username:'', role:'viewer', phone:'', dept:'' };
+  showModal(`<div class="ant-modal-header">${id?'编辑':'添加'}用户</div>
+    <div class="ant-modal-body">
+      <div class="ant-form-item"><label class="ant-form-label">姓名</label><input id="uName" value="${u.name}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">用户名</label><input id="uUsername" value="${u.username}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">角色</label><select id="uRole" class="ant-select">
+        ${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${u.role===k?'selected':''}>${v}</option>`).join('')}
+      </select></div>
+      <div class="ant-form-item"><label class="ant-form-label">电话</label><input id="uPhone" value="${u.phone}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">部门</label><input id="uDept" value="${u.dept}" class="ant-input"></div>
+    </div>
+    <div class="ant-modal-footer">
+      <button onclick="closeModal()" class="ant-btn ant-btn-default">取消</button>
+      <button onclick="saveUser(${id})" class="ant-btn ant-btn-primary">保存</button>
+    </div>`);
+}
+
+function updateSetting(id, key, val) {
+  store.devices.find(d=>d.id===id).settings[key] = val;
+  addLog(id, ROLES[currentRole], {
+    channel: 'remote', action: '运行设置', result: '参数保存成功', detail: '修改项：' + key
+  });
+}
+
+function saveUser(id) {
+  const data = { name:document.getElementById('uName').value, username:document.getElementById('uUsername').value,
+    role:document.getElementById('uRole').value, phone:document.getElementById('uPhone').value, dept:document.getElementById('uDept').value };
+  if (!data.name || !data.username) { alert('请填写姓名和用户名'); return; }
+  if (id) Object.assign(store.users.find(x=>x.id===id), data);
+  else { data.id = store.nextIds.user++; store.users.push(data); }
+  closeModal(); renderPage();
+}
+
+function deleteUser(id) { if(confirm('确认删除？')) { store.users = store.users.filter(x=>x.id!==id); renderPage(); } }
+
+// 11. Terminal Users
+function renderTerminal() {
+  const rows = store.terminalUsers.map(t => {
+    const devs = t.deviceIds.map(id => store.devices.find(d=>d.id===id)?.name).filter(Boolean);
+    return `<tr>
+      <td><span style="font-weight:500">${t.name}</span></td><td>${t.phone}</td><td>${t.dept}</td>
+      <td>${devs.length ? devs.map(n=>antTag(n,'blue')).join(' ') : antTag('未绑定','default')}</td>
+      <td><button onclick="editTerminal(${t.id})" class="ant-btn ant-btn-link ant-btn-sm">编辑</button>
+        <button onclick="deleteTerminal(${t.id})" class="ant-btn ant-btn-link ant-btn-link-danger ant-btn-sm">删除</button></td>
+    </tr>`;
+  }).join('');
+  return pageHeader('终端用户', '管理终端用户及其绑定的空调设备') + `
+    <div class="ant-toolbar"><button onclick="editTerminal(0)" class="ant-btn ant-btn-primary"><i class="fas fa-plus"></i> 添加终端用户</button></div>
+    ${antCard('终端用户列表', antTable(['姓名','电话','部门','绑定设备','操作'], rows), `<span style="font-size:13px;color:rgba(0,0,0,0.45)">${store.terminalUsers.length} 位用户</span>`, true)}`;
+}
+
+function editTerminal(id) {
+  const t = id ? store.terminalUsers.find(x=>x.id===id) : { name:'', phone:'', dept:'', deviceIds:[] };
+  const devOpts = store.devices.filter(d=>d.settings.allowBind).map(d =>
+    `<label style="display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 0"><input type="checkbox" name="tDev" value="${d.id}" ${t.deviceIds.includes(d.id)?'checked':''}> ${d.name}</label>`
+  ).join('');
+  showModal(`<div class="ant-modal-header">${id?'编辑':'添加'}终端用户</div>
+    <div class="ant-modal-body">
+      <div class="ant-form-item"><label class="ant-form-label">姓名</label><input id="tName" value="${t.name}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">电话</label><input id="tPhone" value="${t.phone}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">部门</label><input id="tDept" value="${t.dept}" class="ant-input"></div>
+      <div class="ant-form-item"><label class="ant-form-label">绑定空调</label><div style="max-height:160px;overflow-y:auto;margin-top:4px">${devOpts||'<span style="color:rgba(0,0,0,0.25)">暂无允许绑定的设备</span>'}</div></div>
+    </div>
+    <div class="ant-modal-footer">
+      <button onclick="closeModal()" class="ant-btn ant-btn-default">取消</button>
+      <button onclick="saveTerminal(${id})" class="ant-btn ant-btn-primary">保存</button>
+    </div>`);
+}
+
+function saveTerminal(id) {
+  const data = { name:document.getElementById('tName').value, phone:document.getElementById('tPhone').value,
+    dept:document.getElementById('tDept').value, deviceIds:[...document.querySelectorAll('[name=tDev]:checked')].map(e=>+e.value) };
+  if (!data.name) { alert('请填写姓名'); return; }
+  if (id) Object.assign(store.terminalUsers.find(x=>x.id===id), data);
+  else { data.id = store.nextIds.terminal++; store.terminalUsers.push(data); }
+  closeModal(); renderPage();
+}
+
+function deleteTerminal(id) { if(confirm('确认删除？')) { store.terminalUsers = store.terminalUsers.filter(x=>x.id!==id); renderPage(); } }
+
+// ========== 用能计费模块 ==========
+function renderBillAllocate() {
+  const b = store.billing;
+  const totalAlloc = b.deviceBilling.reduce((s, x) => s + x.allocatedKwh, 0);
+  const rows = store.devices.map(d => {
+    const bill = b.deviceBilling.find(x => x.deviceId === d.id);
+    const canEdit = hasBillingSettings();
+    return `<tr>
+      <td><span style="font-weight:500">${d.name}</span></td>
+      <td>${d.building}</td>
+      <td>${bill?.runtimeHours ?? 0} h</td>
+      <td>${canEdit
+        ? `<input type="number" step="0.01" min="0.1" max="5" value="${bill?.coefficient}" class="ant-input" style="width:80px" onchange="updateBillCoeff(${d.id},+this.value)">`
+        : (bill?.coefficient ?? '-')}
+      </td>
+      <td>${bill?.participate ? antTag('参与', 'green') : antTag('不参与', 'default')}</td>
+      <td><span style="font-weight:600;color:#1677ff">${bill?.allocatedKwh ?? 0}</span> kWh</td>
+      <td>${d.online ? statusDot('在线', 'success') : statusDot('离线', 'error')}</td>
+    </tr>`;
+  }).join('');
+  return pageHeader('分户计费', '展示每台空调内机的分摊用电量，支持编辑计费系数并手动触发重新分摊') + `
+    <div class="ant-statistic-row" style="grid-template-columns:repeat(4,1fr)">
+      ${statCard('参与分摊', b.deviceBilling.filter(x=>x.participate).length + ' 台', 'fa-check-circle', 'green', '#52c41a')}
+      ${statCard('分摊总量', totalAlloc.toFixed(1) + ' kWh', 'fa-bolt', 'blue', '#1677ff')}
+      ${statCard('计费依据', b.settings.basisLabel, 'fa-clock', 'blue', '#1677ff')}
+      ${statCard('上次分摊', b.settings.lastAllocateTime.split(' ')[1] || '-', 'fa-calendar', 'gray', 'rgba(0,0,0,0.45)')}
+    </div>
+    <div class="ant-toolbar">
+      <button onclick="recalculateBilling()" class="ant-btn ant-btn-primary perm-control perm-admin perm-operator" ${hasBillingSettings()?'':'style="display:none"'}>
+        <i class="fas fa-arrows-rotate"></i> 重新分摊
+      </button>
+      <span style="font-size:13px;color:rgba(0,0,0,0.45)">分摊算法：各内机分摊量 = 外机电表总量 × (本机运行时长×系数) / Σ(参与机运行时长×系数)</span>
+    </div>
+    ${antCard('内机分摊明细', antTable(['设备名称','所在楼栋','运行时长','计费系数','分摊状态','分摊电量','连接状态'], rows), `<span style="font-size:13px;color:rgba(0,0,0,0.45)">计费周期 ${getBillCycleLabel()}</span>`, true)}`;
+}
+
+function updateBillCoeff(deviceId, val) {
+  if (!hasBillingSettings()) return;
+  const bill = store.billing.deviceBilling.find(x => x.deviceId === deviceId);
+  if (bill) {
+    bill.coefficient = Math.max(0.1, Math.min(5, val));
+    addLog(deviceId, ROLES[currentRole], { channel: 'remote', action: '计费系数', result: '系数已更新', detail: '计费系数设为 ' + bill.coefficient });
+  }
+}
+
+function renderBillStats() {
+  const def = getDefaultStatDates();
+  if (!billDateStart) billDateStart = def.start;
+  if (!billDateEnd) billDateEnd = def.end;
+  const filterBar = `<div class="ant-filter-bar" style="flex-wrap:wrap">
+    <div class="ant-filter-item"><label>开始日期</label>
+      <input id="billDateStart" type="date" class="ant-input" value="${billDateStart}" onchange="billDateStart=this.value"></div>
+    <div class="ant-filter-item"><label>结束日期</label>
+      <input id="billDateEnd" type="date" class="ant-input" value="${billDateEnd}" onchange="billDateEnd=this.value"></div>
+    <div class="ant-filter-item"><label>楼栋</label>
+      <select id="billStatBuilding" class="ant-select"><option value="">全部楼栋</option>
+        ${BUILDINGS.map(x => `<option value="${x}">${x}</option>`).join('')}
+      </select></div>
+    <button onclick="searchBillStats()" class="ant-btn ant-btn-primary"><i class="fas fa-search"></i> 查询</button>
+    <button onclick="exportBillReport()" class="ant-btn ant-btn-default"><i class="fas fa-download"></i> 导出报表</button>
+  </div>`;
+  return pageHeader('计费统计') +
+    antCard('查询条件', filterBar, '') + `
+    <div id="billStatSummary" style="margin-top:16px"></div>
+    <div style="margin-top:16px">${antCard('房间空调计费明细', `
+      <div class="ant-table-wrapper"><table class="ant-table"><thead><tr>
+        <th>楼栋</th><th>楼层</th><th>房间</th><th>设备名称</th><th>计费系数</th>
+        <th>运行时长</th><th>分摊状态</th><th>用电量</th><th>电费</th>
+      </tr></thead><tbody id="billStatBody"></tbody></table></div>`,
+      `<span id="billStatCount" style="font-size:13px;color:rgba(0,0,0,0.45)"></span>`, true)}</div>`;
+}
+
+function getBillDaysInRange(startStr, endStr) {
+  const s = new Date(startStr + 'T00:00:00');
+  const e = new Date(endStr + 'T00:00:00');
+  if (isNaN(s.getTime()) || isNaN(e.getTime()) || s > e) return 0;
+  return Math.ceil((e - s) / 86400000) + 1;
+}
+
+function calcBillStatRows(start, end, building) {
+  const days = getBillDaysInRange(start, end);
+  if (!days) return [];
+  const unitPrice = store.billing.settings.unitPrice || BILL_UNIT_PRICE;
+  const factor = days / 30;
+  return store.devices
+    .filter(d => !building || d.building === building)
+    .map(d => {
+      const bill = store.billing.deviceBilling.find(x => x.deviceId === d.id);
+      const kwh = bill?.participate ? +((bill.allocatedKwh || 0) * factor).toFixed(2) : 0;
+      const fee = +(kwh * unitPrice).toFixed(2);
+      return { d, bill, kwh, fee, unitPrice };
+    });
+}
+
+function renderBillStatRows(items) {
+  if (!items.length) {
+    return '<tr><td colspan="9" style="padding:32px;text-align:center;color:rgba(0,0,0,0.25)">暂无数据</td></tr>';
+  }
+  return items.map(({ d, bill, kwh, fee }) => `<tr>
+    <td>${d.building}</td><td>${d.floor}</td><td>${d.room}</td>
+    <td><span style="font-weight:500">${d.name}</span></td>
+    <td>${bill?.coefficient ?? '-'}</td>
+    <td>${bill?.runtimeHours ?? 0} h</td>
+    <td>${bill?.participate ? antTag('参与', 'green') : antTag('不参与', 'default')}</td>
+    <td><span style="font-weight:600;color:#1677ff">${kwh}</span> kWh</td>
+    <td><span style="font-weight:600;color:#fa8c16">¥${fee.toFixed(2)}</span></td>
+  </tr>`).join('');
+}
+
+function searchBillStats() {
+  billDateStart = document.getElementById('billDateStart')?.value || billDateStart;
+  billDateEnd = document.getElementById('billDateEnd')?.value || billDateEnd;
+  if (billDateStart && billDateEnd && billDateStart > billDateEnd) {
+    alert('开始日期不能晚于结束日期');
+    return;
+  }
+  const building = document.getElementById('billStatBuilding')?.value || '';
+  const items = calcBillStatRows(billDateStart, billDateEnd, building);
+  const totalKwh = items.reduce((s, x) => s + x.kwh, 0);
+  const totalFee = items.reduce((s, x) => s + x.fee, 0);
+  const unitPrice = store.billing.settings.unitPrice || BILL_UNIT_PRICE;
+  const summary = document.getElementById('billStatSummary');
+  if (summary) {
+    summary.innerHTML = `<div class="ant-statistic-row" style="grid-template-columns:repeat(4,1fr)">
+      ${statCard('查询房间数', items.length + ' 间', 'fa-door-open', 'blue', '#1677ff')}
+      ${statCard('总用电量', totalKwh.toFixed(1) + ' kWh', 'fa-bolt', 'green', '#52c41a')}
+      ${statCard('总电费', '¥' + totalFee.toFixed(2), 'fa-yen-sign', 'orange', '#fa8c16')}
+      ${statCard('电价', unitPrice + ' 元/kWh', 'fa-tag', 'gray', 'rgba(0,0,0,0.45)')}
+    </div>`;
+  }
+  const body = document.getElementById('billStatBody');
+  if (body) body.innerHTML = renderBillStatRows(items);
+  const cnt = document.getElementById('billStatCount');
+  if (cnt) cnt.textContent = `${billDateStart} ~ ${billDateEnd} · 共 ${items.length} 条记录`;
+}
+
+function exportBillReport() {
+  billDateStart = document.getElementById('billDateStart')?.value || billDateStart;
+  billDateEnd = document.getElementById('billDateEnd')?.value || billDateEnd;
+  const building = document.getElementById('billStatBuilding')?.value || '';
+  const items = calcBillStatRows(billDateStart, billDateEnd, building);
+  const unitPrice = store.billing.settings.unitPrice || BILL_UNIT_PRICE;
+  let csv = `查询区间,${billDateStart},${billDateEnd}\n电价(元/kWh),${unitPrice}\n\n`;
+  csv += '楼栋,楼层,房间,设备名称,计费系数,运行时长(h),分摊状态,用电量(kWh),电费(元)\n';
+  items.forEach(({ d, bill, kwh, fee }) => {
+    csv += `${d.building},${d.floor},${d.room},${d.name},${bill?.coefficient ?? ''},${bill?.runtimeHours ?? 0},${bill?.participate ? '参与' : '不参与'},${kwh},${fee.toFixed(2)}\n`;
+  });
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = '计费统计_' + billDateStart + '_' + billDateEnd + '.csv'; a.click();
+}
+
+function renderBillSettings() {
+  if (!hasBillingSettings()) {
+    return pageHeader('计费参数设置', '维护计费系数、分摊标志、外机电表及计费周期') +
+      '<div class="ant-alert ant-alert-warning"><i class="fas fa-lock" style="color:#faad14"></i><span>浏览人员无权限修改计费参数，请联系管理人员或操作人员</span></div>';
+  }
+  const s = store.billing.settings;
+  if (!s.cycleStart || !s.cycleEnd) {
+    const def = getDefaultBillCycleDates();
+    s.cycleStart = s.cycleStart || s.start || def.cycleStart;
+    s.cycleEnd = s.cycleEnd || s.end || def.cycleEnd;
+    delete s.start;
+    delete s.end;
+  }
+  const globalForm = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="ant-form-item"><label class="ant-form-label">计费依据</label>
+      <select id="billBasis" class="ant-select" onchange="updateBillGlobal('basis',this.value)">
+        <option value="runtime" ${s.basis==='runtime'?'selected':''}>运行时长</option>
+        <option value="area" ${s.basis==='area'?'selected':''}>面积权重</option>
+        <option value="fixed" ${s.basis==='fixed'?'selected':''}>固定比例</option>
+      </select></div>
+    <div class="ant-form-item"><label class="ant-form-label">默认计费系数</label>
+      <input id="billDefaultCoeff" type="number" step="0.01" value="${s.defaultCoefficient}" class="ant-input" onchange="updateBillGlobal('defaultCoefficient',+this.value)"></div>
+    <div class="ant-form-item"><label class="ant-form-label">计费周期 · 开始日期</label>
+      <input id="billCycleStart" type="date" class="ant-input" value="${s.cycleStart}" onchange="updateBillCycleDate('cycleStart',this.value)"></div>
+    <div class="ant-form-item"><label class="ant-form-label">计费周期 · 结束日期</label>
+      <input id="billCycleEnd" type="date" class="ant-input" value="${s.cycleEnd}" onchange="updateBillCycleDate('cycleEnd',this.value)"></div>
+    <div style="grid-column:1/-1;font-size:13px;color:rgba(0,0,0,0.45)">当前计费周期：<strong style="color:rgba(0,0,0,0.88)">${getBillCycleLabel()}</strong>（分摊电量按该区间内运行数据计算）</div>
+  </div>`;
+  const meterRows = store.billing.outdoorMeters.map(m => `<tr>
+    <td>${m.building}</td><td>${m.meterNo}</td>
+    <td><input type="number" value="${m.totalKwh}" class="ant-input" style="width:120px" onchange="updateOutdoorMeter(${m.id},'totalKwh',+this.value)"></td>
+  </tr>`).join('');
+  const devRows = store.devices.map(d => {
+    const bill = store.billing.deviceBilling.find(x => x.deviceId === d.id);
+    return `<tr>
+      <td>${d.name}</td><td>${d.building}</td>
+      <td><input type="checkbox" ${bill?.participate?'checked':''} onchange="updateBillParticipate(${d.id},this.checked)"></td>
+      <td><input type="number" step="0.01" value="${bill?.coefficient}" class="ant-input" style="width:80px" onchange="updateBillCoeff(${d.id},+this.value)"></td>
+    </tr>`;
+  }).join('');
+  return pageHeader('计费参数设置', '维护计费系数、分摊标志、空调外机电表及计费周期定义') + `
+    ${antCard('全局参数', globalForm, '')}
+    <div style="margin-top:16px">${antCard('外机电表', antTable(['楼栋','电表编号','本期读数(kWh)'], meterRows), `<span style="font-size:13px;color:rgba(0,0,0,0.45)">读数对应计费周期 ${getBillCycleLabel()}</span>`, true)}</div>
+    <div style="margin-top:16px">${antCard('内机分摊配置', antTable(['设备','楼栋','参与分摊','计费系数'], devRows), `<button onclick="recalculateBilling()" class="ant-btn ant-btn-primary ant-btn-sm"><i class="fas fa-arrows-rotate"></i> 保存并重新分摊</button>`, true)}</div>`;
+}
+
+function updateBillGlobal(key, val) {
+  if (!hasBillingSettings()) return;
+  store.billing.settings[key] = val;
+  if (key === 'basis') store.billing.settings.basisLabel = { runtime: '运行时长', area: '面积权重', fixed: '固定比例' }[val];
+  addLog(0, ROLES[currentRole], { channel: 'remote', action: '计费参数', result: '参数保存成功', detail: '修改项：' + key });
+}
+
+function updateBillCycleDate(key, val) {
+  if (!hasBillingSettings()) return;
+  const s = store.billing.settings;
+  const nextStart = key === 'cycleStart' ? val : s.cycleStart;
+  const nextEnd = key === 'cycleEnd' ? val : s.cycleEnd;
+  if (nextStart && nextEnd && nextStart > nextEnd) {
+    alert('开始日期不能晚于结束日期');
+    renderPage();
+    return;
+  }
+  s[key] = val;
+  addLog(0, ROLES[currentRole], { channel: 'remote', action: '计费参数', result: '参数保存成功', detail: '计费周期：' + getBillCycleLabel() });
+}
+
+function updateOutdoorMeter(id, key, val) {
+  if (!hasBillingSettings()) return;
+  const m = store.billing.outdoorMeters.find(x => x.id === id);
+  if (m) { m[key] = val; addLog(0, ROLES[currentRole], { channel: 'remote', action: '外机电表', result: '电表参数已更新', detail: '电表 ' + m.meterNo }); }
+}
+
+function updateBillParticipate(deviceId, val) {
+  if (!hasBillingSettings()) return;
+  const bill = store.billing.deviceBilling.find(x => x.deviceId === deviceId);
+  if (bill) { bill.participate = val; addLog(deviceId, ROLES[currentRole], { channel: 'remote', action: '分摊配置', result: val ? '启用分摊' : '取消分摊', detail: '' }); }
+}
+
+function renderBillUsers() {
+  const roleTag = { admin: 'red', operator: 'blue', viewer: 'default' };
+  const rows = store.users.map(u => `<tr>
+    <td><span style="font-weight:500">${u.name}</span></td><td>${u.username}</td>
+    <td>${antTag(ROLES[u.role], roleTag[u.role])}</td><td>${u.dept}</td>
+    <td>${u.role === 'admin' ? antTag('全部权限', 'green') : u.role === 'operator' ? antTag('计费参数可编辑', 'blue') : antTag('仅查看', 'default')}</td>
+    <td>${u.role !== 'viewer' ? antTag('可编辑', 'green') : antTag('只读', 'default')}</td>
+    <td data-perm="users">
+      <button onclick="editUser(${u.id})" class="ant-btn ant-btn-link ant-btn-sm">编辑</button>
+    </td>
+  </tr>`).join('');
+  return pageHeader('计费用户权限', '与空调监控系统共用用户体系，计费参数设置权限按角色区分') + `
+    <div class="ant-alert ant-alert-info" style="margin-bottom:16px">
+      <i class="fas fa-info-circle" style="color:#1677ff"></i>
+      <div style="font-size:13px;line-height:1.8">
+        <strong>计费模块权限说明</strong><br>
+        管理人员 — 全部权限（分户计费、参数设置、用户管理）<br>
+        操作人员 — 可编辑计费参数、触发重新分摊，不可管理用户<br>
+        浏览人员 — 仅可查看分户计费和统计报表，不可修改参数
+      </div>
+    </div>
+    ${antCard('用户权限列表', antTable(['姓名','用户名','系统角色','部门','计费参数','重新分摊','操作'], rows), `<button onclick="switchPage('users')" class="ant-btn ant-btn-link ant-btn-sm">前往系统用户管理 →</button>`, true)}`;
+}
+
+// Modal helpers
+function showModal(html) {
+  document.getElementById('modalBox').innerHTML = html;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+
+// ========== LOGIN ==========
+function renderDemoAccounts() {
+  document.getElementById('demoAccountList').innerHTML = DEMO_ACCOUNTS.map(a => `
+    <tr onclick="fillLogin('${a.username}','${a.password}')" style="cursor:pointer" title="点击快速填入">
+      <td>${a.label}</td>
+      <td><code onclick="event.stopPropagation();fillLogin('${a.username}','${a.password}')">${a.username}</code></td>
+      <td><code onclick="event.stopPropagation();fillLogin('${a.username}','${a.password}')">${a.password}</code></td>
+    </tr>`).join('');
+}
+
+function fillLogin(u, p) {
+  document.getElementById('loginUsername').value = u;
+  document.getElementById('loginPassword').value = p;
+  document.getElementById('loginError').innerHTML = '';
+}
+
+function showLoginError(msg) {
+  document.getElementById('loginError').innerHTML = msg ? `<i class="fas fa-circle-exclamation"></i>${msg}` : '';
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const account = DEMO_ACCOUNTS.find(a => a.username === username && a.password === password);
+  if (!account) {
+    showLoginError('用户名或密码错误，请使用下方演示账号');
+    return;
+  }
+  loggedInUser = account;
+  sessionStorage.setItem('ac_login', JSON.stringify({ username: account.username, role: account.role }));
+  enterApp(account);
+}
+
+function enterApp(account) {
+  currentRole = account.role;
+  document.getElementById('loginPage').classList.add('app-hidden');
+  document.getElementById('appRoot').classList.remove('app-hidden');
+  document.getElementById('roleSelect').value = account.role;
+  document.getElementById('headerRoleName').textContent = ROLES[account.role];
+  const avatars = { admin:'管', operator:'操', viewer:'览' };
+  document.getElementById('headerAvatar').textContent = avatars[account.role];
+  initApp();
+}
+
+function logout() {
+  loggedInUser = null;
+  sessionStorage.removeItem('ac_login');
+  document.getElementById('appRoot').classList.add('app-hidden');
+  document.getElementById('loginPage').classList.remove('app-hidden');
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+  showLoginError('');
+  renderDemoAccounts();
+}
+
+function checkAutoLogin() {
+  const saved = sessionStorage.getItem('ac_login');
+  if (!saved) { renderDemoAccounts(); return; }
+  try {
+    const { username, role } = JSON.parse(saved);
+    const account = DEMO_ACCOUNTS.find(a => a.username === username && a.role === role);
+    if (account) { loggedInUser = account; enterApp(account); return; }
+  } catch {}
+  renderDemoAccounts();
+}
+
+function initApp() {
+  updateNotifBadge();
+  renderSidebar();
+  renderPage();
+}
+
+// Init
+document.getElementById('btnLogout').addEventListener('click', logout);
+document.getElementById('roleSelect').addEventListener('change', e => {
+  currentRole = e.target.value;
+  document.getElementById('headerRoleName').textContent = ROLES[currentRole];
+  const avatars = { admin:'管', operator:'操', viewer:'览' };
+  document.getElementById('headerAvatar').textContent = avatars[currentRole];
+  const restricted = { devices:'manage', settings:'settings', users:'users', terminal:'manage', strategy:'manage', billSettings:'billingSettings', billUsers:'users' };
+  const need = restricted[currentPage];
+  if (need && !hasPerm(need)) currentPage = 'overview';
+  renderSidebar();
+  renderPage();
+});
+
+document.getElementById('btnSimAlert').addEventListener('click', () => {
+  const msgs = {
+    fault: '压缩机异常，系统保护停机',
+    offline: '空调主机离线，通信中断',
+    temp: '回风温度超限，超过设定阈值',
+    offhours: '非工作时间异常开机',
+    indoor_offline: '空调内机离线，数据采集中断',
+    runtime: '运行时长异常，偏离历史均值'
+  };
+  const type = ALERT_TYPE_KEYS[Math.floor(Math.random() * ALERT_TYPE_KEYS.length)];
+  const dev = store.devices[Math.floor(Math.random() * store.devices.length)];
+  addAlert(type, dev.id, msgs[type]);
+});
+
+document.getElementById('btnNotif').addEventListener('click', () => {
+  switchPage('alerts');
+});
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+function updateClock() {
+  const el = document.getElementById('currentTime');
+  if (el) el.textContent = new Date().toLocaleString('zh-CN', { hour12:false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+checkAutoLogin();
+
+</script>
+</body>
+</html>
